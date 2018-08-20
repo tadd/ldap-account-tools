@@ -4,13 +4,16 @@ require 'net-ldap'
 
 module LdapAccountManage
   module SubInjector
+    class LdapError < StandardError; end
+
     class LdapAccount
       def initialize(config) # rubocop:disable Metrics/AbcSize
         config['ldap']['uri']
 
         @uid_start = config['general']['uid_start']
         @ldap = Net::LDAP.new(
-          host: 'localhost'
+          host: config['ldap']['host'],
+          port: config['ldap']['port']
         )
 
         @userbase =
@@ -55,7 +58,15 @@ module LdapAccountManage
           uid += 1
         end
 
-        uid + 1
+        uid
+      end
+
+      def report_error(result)
+        raise LdapError, format(
+          '%<title>s: %<detail>s',
+          title: result.message,
+          detail: result.error_message
+        )
       end
 
       def useradd(attrs)
@@ -64,10 +75,13 @@ module LdapAccountManage
           cn: attrs[:cn],
           userbase: @userbase
         )
-        @ldap.add(
+        result = @ldap.add(
           dn: dn,
           attributes: attrs
         )
+        unless result
+          report_error(@ldap.get_operation_result)
+        end
       end
 
       def groupadd(attrs)
@@ -76,10 +90,13 @@ module LdapAccountManage
           cn: attrs[:cn],
           groupbase: @groupbase
         )
-        @ldap.add(
+        result = @ldap.add(
           dn: dn,
           attributes: attrs
         )
+        unless result
+          report_error(@ldap.get_operation_result)
+        end
       end
     end
   end

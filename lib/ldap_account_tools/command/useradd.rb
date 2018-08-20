@@ -55,7 +55,7 @@ module LdapAccountManage
     def after_useradd(username, userdata, injector, config)
       Util.lockfile(config, USERADD_LOCKFILE) do
         if userdata[:uidnumber].nil?
-          userdata[:uidnumber] = injector.ldap.next_uidnumber
+          userdata[:uidnumber] = injector.ldap.next_uidnumber.to_s
         end
         if userdata[:gidnumber].nil?
           userdata[:gidnumber] = userdata[:uidnumber]
@@ -138,8 +138,13 @@ module LdapAccountManage
         if !options[:phonenumber].nil?
           options[:phonenumber]
         else
-          cli.ask('Phone number []: ') do |q|
+          phone = cli.ask('Phone number []: ') do |q|
             q.validate = /^\+?[0-9]*$/
+          end
+          if phone == ''
+            nil
+          else
+            phone
           end
         end
 
