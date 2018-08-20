@@ -48,7 +48,7 @@ module LdapAccountManage
 
     def before_useradd(username, _userdata, ldap)
       if ldap.user_exists?(username)
-        raise Util.ToolOperationError, format('already user exists: %<user>s', user: username)
+        raise Util::ToolOperationError, format('already user exists: %<user>s', user: username)
       end
     end
 
