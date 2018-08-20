@@ -46,7 +46,7 @@ module LdapAccountManage
       )
     end
 
-    def before_useradd(username, _userdatam, ldap)
+    def before_useradd(username, userdata, ldap)
       if ldap.user_exists?(username)
         raise Util.ToolOperationError, format('already user exists: %<user>s', user: username)
       end
@@ -56,12 +56,12 @@ module LdapAccountManage
       Util.lockfile(config, USERADD_LOCKFILE) do
         if userdata[:uidnumber].nil?
           userdata[:uidnumber] = ldap.next_uidnumber
-        end
+        else
         if userdata[:gidnumber].nil?
           userdata[:gidnumber] = userdata[:uidnumber]
         end
 
-        _useradd(username, userdata, ldap)
+        _useradd(username, attrs, ldap)
       end
     end
 
@@ -76,61 +76,91 @@ module LdapAccountManage
     # rubocop:disable Metrics/AbcSize
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
-    def interactive_useradd(username, userdata, injector, config)
-      before_useradd(username, userdata, injector.ldap)
+    def interactive_useradd(username, options, injector, config)
+      before_useradd(username, options, injector.ldap)
 
+      userdata = {}
       cli = HighLine.new
 
-      if userdata[:familyname].nil?
-        userdata[:familyname] = cli.ask('Family name: ').downcase
-      end
-
-      if userdata[:givenname].nil?
-        userdata[:givenname] = cli.ask('Given name: ').downcase
-      end
-
-      if userdata[:displayname].nil?
-        userdata[:displayname] = format(
-          '%<given> %<family>',
-          given: userdata[:givenname].capitalize,
-          family: userdata[:familyname].capitalize
-        )
-      end
-
-      if userdata[:mail].nil?
-        userdata[:mail] =
-          if config['common']['mailhost'].nil?
-            format(
-              '%<user>s@%<host>s',
-              user: username,
-              host: config['common']['mailhost']
-            )
-          else
-            cli.ask('Mail address []: ') do |q|
-              q.validate = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i
-            end
-          end
-      end
-
-      if userdata[:lang].nil?
-        userdata[:lang] = cli.ask(format('Preferred language [%<lang>s]: ', lang: ENV['LANG']))
-        userdata[:lang] = ENV['LANG'] if userdata[:lang] == ''
-      end
-
-      if userdata[:lang].nil?
-        userdata[:lang] = cli.ask('Phone number []: ') do |q|
-          q.validate = /^\+?[0-9]{4}[0-9]*$/
+      userdata[:familyname] =
+        if !options[:familyname].nil?
+          options[:familyname]
+        else
+          cli.ask('Family name: ').downcase
         end
-      end
 
-      if userdata[:lang].nil?
-        userdata[:lang] = cli.ask('Login shell [/bin/bash]: ')
-        userdata[:lang] = '/bin/bash' if userdata[:lang] == ''
-      end
+      userdata[:givenname] =
+        if !options[:givenname].nil?
+          options[:givenname]
+        else
+          cli.ask('Given name: ').downcase
+        end
 
-      if userdata[:homedir].nil?
-        userdata[:homedir] = format('/home/%<user>s', user: username)
-      end
+      userdata[:displayname] =
+        if !options[:displayname].nil?
+          options[:displayname]
+        else
+          format(
+            '%<given> %<family>',
+            given: options[:givenname].capitalize,
+            family: options[:familyname].capitalize
+          )
+        end
+
+      userdata[:mail] =
+        if !options[:mail].nil?
+          options[:mail]
+        elsif config['common']['mailhost'].nil?
+          format(
+            '%<user>s@%<host>s',
+            user: username,
+            host: config['common']['mailhost']
+          )
+        else
+          cli.ask('Mail address []: ') do |q|
+            q.validate = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i
+          end
+        end
+
+      userdata[:lang] =
+        if !options[:lang].nil?
+          options[:lang]
+        else
+          lang = cli.ask(format('Preferred language [%<lang>s]: ', lang: ENV['LANG']))
+          if lang == ''
+            ENV['LANG']
+          else
+            lang
+          end
+        end
+
+      userdata[:lang] =
+        if !options[:lang].nil?
+          options[:lang]
+        else
+          cli.ask('Phone number []: ') do |q|
+            q.validate = /^\+?[0-9]{4}[0-9]*$/
+          end
+        end
+
+      userdata[:shell] =
+        if !options[:shell].nil?
+          options[:shell]
+        else
+          shell = cli.ask('Login shell [/bin/bash]: ')
+          if shell == ''
+            '/bin/bash'
+          else
+            shell
+          end
+        end
+
+      userdata[:homedir] =
+        if !options[:homedir].nil?
+          options[:homedir]
+        else
+          format('/home/%<user>s', user: username)
+        end
 
       loop do
         password = cli.ask('Enter your password: ') do |q|

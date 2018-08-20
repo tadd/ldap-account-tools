@@ -34,9 +34,9 @@ module LdapAccountManage
         {
           'general' => {
             'uid_start' => 2000,
-            'data_dir' => '/var/lib/ldap-manage/data',
-            'cache_dir' => '/var/lib/ldap-manage/cache',
-            'lock_dir' => '/var/lock/ldap-manage'
+            'data_dir' => '/var/lib/ldap-account-tools/data',
+            'cache_dir' => '/var/lib/ldap-account-tools/cache',
+            'lock_dir' => '/var/lock/ldap-account-tools'
           },
           'mail' => {
             'enable' => false,
