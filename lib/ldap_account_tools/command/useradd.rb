@@ -61,7 +61,7 @@ module LdapAccountManage
           userdata[:gidnumber] = userdata[:uidnumber]
         end
 
-        _useradd(username, attrs, ldap)
+        _useradd(username, userdata, ldap)
       end
     end
 
