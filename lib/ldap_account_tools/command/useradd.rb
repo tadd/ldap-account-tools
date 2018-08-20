@@ -10,11 +10,11 @@ module LdapAccountManage
 
     USERADD_LOCKFILE = 'useradd.lock'
 
-    def _useradd(username, userdata, ldap)
-      password_hash = crypt_hash(userdata[:password])
+    def _useradd(username, userdata, injector)
+      password_hash = injector.cracklib.crypt_hash(userdata[:password])
       gecos = userdata[:displayname]
 
-      ldap.useradd(
+      injector.ldap.useradd(
         objectClass: %w[
           inetOrgPerson
           posixAccount
@@ -36,7 +36,7 @@ module LdapAccountManage
         gecos: gecos
       )
 
-      ldap.groupadd(
+      injector.ldap.groupadd(
         objectClass: %w[
           posixGroup
         ],
@@ -52,16 +52,16 @@ module LdapAccountManage
       end
     end
 
-    def after_useradd(username, userdata, ldap, config)
+    def after_useradd(username, userdata, injector, config)
       Util.lockfile(config, USERADD_LOCKFILE) do
         if userdata[:uidnumber].nil?
-          userdata[:uidnumber] = ldap.next_uidnumber
+          userdata[:uidnumber] = injector.ldap.next_uidnumber
         end
         if userdata[:gidnumber].nil?
           userdata[:gidnumber] = userdata[:uidnumber]
         end
 
-        _useradd(username, userdata, ldap)
+        _useradd(username, userdata, injector)
       end
     end
 
@@ -192,7 +192,7 @@ module LdapAccountManage
         break
       end
 
-      after_useradd(username, userdata, injector.ldap, config)
+      after_useradd(username, userdata, injector, config)
     end
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity

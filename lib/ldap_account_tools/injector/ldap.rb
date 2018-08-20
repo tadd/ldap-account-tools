@@ -5,7 +5,7 @@ require 'net-ldap'
 module LdapAccountManage
   module SubInjector
     class LdapAccount
-      def initialize(config)
+      def initialize(config) # rubocop:disable Metrics/AbcSize
         config['ldap']['uri']
 
         @uid_start = config['general']['uid_start']
@@ -28,13 +28,14 @@ module LdapAccountManage
       end
 
       def user_exists?(username)
-        @ldap.search(
+        result = @ldap.search(
           base: @userbase,
           filter: Net::LDAP::Filter.eq('uid', username),
           attributes: %w[
             cn
           ]
         )
+        result.size.positive?
       end
 
       def next_uidnumber

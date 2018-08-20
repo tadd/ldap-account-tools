@@ -3,13 +3,6 @@
 module LdapAccountManage
   module SubInjector
     class CrackLib
-      class << self
-        def crypt_hash(str)
-          salt = '$6$' + Array.new(15).map { |_| rand(64) }.pack('C*').tr("\x00-\x3f", 'A-Za-z0-9./')
-          str.crypt(salt)
-        end
-      end
-
       def initialize(config)
         @use_cracklib = config['general']['use_cracklib']
         if @use_cracklib
@@ -28,6 +21,11 @@ module LdapAccountManage
             is_strong: true
           }
         end
+      end
+
+      def crypt_hash(str)
+        salt = '$6$' + Array.new(15).map { |_| rand(64) }.pack('C*').tr("\x00-\x3f", 'A-Za-z0-9./')
+        str.crypt(salt)
       end
     end
   end
