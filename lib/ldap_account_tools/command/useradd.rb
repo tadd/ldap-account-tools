@@ -139,7 +139,7 @@ module LdapAccountManage
           options[:phonenumber]
         else
           cli.ask('Phone number []: ') do |q|
-            q.validate = /^\+?[0-9]{4}[0-9]*$/
+            q.validate = /^\+?[0-9]*$/
           end
         end
 
