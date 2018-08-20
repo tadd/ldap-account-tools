@@ -37,7 +37,7 @@ module LdapAccountManage
 
         uid = @uid_start
         loop do
-          break if uid_numbers[uid.to_s]
+          break unless uid_numbers[uid.to_s]
           uid += 1
         end
 
