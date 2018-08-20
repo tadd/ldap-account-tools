@@ -8,8 +8,6 @@ module LdapAccountManage
 
     class LdapAccount
       def initialize(config) # rubocop:disable Metrics/AbcSize
-        config['ldap']['uri']
-
         @uid_start = config['general']['uid_start']
         @ldap = Net::LDAP.new(
           host: config['ldap']['host'],

@@ -40,6 +40,7 @@ module LdapAccountManage
             'lock_dir' => '/var/lock/ldap-account-tools'
           },
           'common' => {
+            'mailhost' => hostname
           },
           'mail' => {
             'enable' => false,
@@ -49,8 +50,9 @@ module LdapAccountManage
             'disable_tls' => false
           },
           'ldap' => {
-            'host' => 'ldap',
+            'host' => 'localhost',
             'port' => 389,
+            'auth_method' => 'simple',
             'base' => 'dc=iwasaki-local,dc=cs,dc=uec,dc=ac,dc=jp'
           }
         }

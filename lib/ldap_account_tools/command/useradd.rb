@@ -110,15 +110,24 @@ module LdapAccountManage
       userdata[:mail] =
         if !options[:mail].nil?
           options[:mail]
-        elsif !config['common']['mailhost'].nil?
-          format(
-            '%<user>s@%<host>s',
-            user: username,
-            host: config['common']['mailhost']
-          )
         else
-          cli.ask('Mail address []: ') do |q|
+          mail_default =
+            if !config['common']['mailhost'].nil?
+              format(
+                '%<user>s@%<host>s',
+                user: username,
+                host: config['common']['mailhost']
+              )
+            else
+              ''
+            end
+          mail = cli.ask(format('Mail address [%<default>s]: ', default: mail_default)) do |q|
             q.validate = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i
+          end
+          if mail == ''
+            mail_default
+          else
+            mail
           end
         end
 
