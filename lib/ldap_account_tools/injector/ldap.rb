@@ -31,7 +31,7 @@ module LdapAccountManage
       def user_exists?(username)
         result = @ldap.search(
           base: @userbase,
-          filter: Net::LDAP::Filter.eq('uid', username),
+          filter: Net::LDAP::Filter.eq('objectClass', 'posixAccount').&(Net::LDAP::Filter.eq('uid', username)),
           attributes: %w[
             cn
           ]
@@ -43,11 +43,14 @@ module LdapAccountManage
         uid_numbers = Hash.new(false)
         @ldap.search(
           base: @userbase,
+          filter: Net::LDAP::Filter.eq('objectClass', 'posixAccount'),
           attributes: %w[
             uidNumber
           ]
         ) do |entry|
-          uid_numbers[entry[:uidNumber]] = true
+          entry.uidnumber.each do |num|
+            uid_numbers[num] = true
+          end
         end
 
         uid = @uid_start
