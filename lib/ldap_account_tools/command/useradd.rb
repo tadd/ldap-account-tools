@@ -110,7 +110,7 @@ module LdapAccountManage
       userdata[:mail] =
         if !options[:mail].nil?
           options[:mail]
-        elsif config['common']['mailhost'].nil?
+        elsif !config['common']['mailhost'].nil?
           format(
             '%<user>s@%<host>s',
             user: username,
@@ -142,7 +142,7 @@ module LdapAccountManage
             q.validate = /^\+?[0-9]*$/
           end
           if phone == ''
-            nil
+            '00000000000'
           else
             phone
           end

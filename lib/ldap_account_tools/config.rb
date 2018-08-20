@@ -40,7 +40,6 @@ module LdapAccountManage
             'lock_dir' => '/var/lock/ldap-account-tools'
           },
           'common' => {
-
           },
           'mail' => {
             'enable' => false,
