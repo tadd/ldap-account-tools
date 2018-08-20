@@ -1,19 +1,14 @@
 # frozen_string_literal: true
 
 require 'highline'
-require 'rubylibcrack'
 require_relative '../util/lock'
+require_relative '../util/error'
 
 module LdapAccountManage
   module UserAdd
     module_function
 
     USERADD_LOCKFILE = 'useradd.lock'
-
-    def crypt_hash(str)
-      salt = '$6$' + Array.new(15).map { |_| rand(64) }.pack('C*').tr("\x00-\x3f", 'A-Za-z0-9./')
-      str.crypt(salt)
-    end
 
     def _useradd(username, userdata, ldap)
       password_hash = crypt_hash(userdata[:password])
@@ -51,8 +46,8 @@ module LdapAccountManage
       )
     end
 
-    def before_useradd(username, _userdata)
-      if user_exists?(username)
+    def before_useradd(username, _userdatam, ldap)
+      if ldap.user_exists?(username)
         raise Util.ToolOperationError, format('already user exists: %<user>s', user: username)
       end
     end
@@ -73,7 +68,7 @@ module LdapAccountManage
     def useradd(_username, _userdata, _injector, _config)
       # before_useradd(username, userdata)
 
-      raise ToolOperationError, 'not implemented'
+      raise Util::ToolOperationError, 'not implemented'
 
       # after_useradd(username, userdata, ldap, config)
     end
@@ -82,7 +77,7 @@ module LdapAccountManage
     # rubocop:disable Metrics/PerceivedComplexity
     # rubocop:disable Metrics/CyclomaticComplexity
     def interactive_useradd(username, userdata, injector, config)
-      before_useradd(username, userdata)
+      before_useradd(username, userdata, injector.ldap)
 
       cli = HighLine.new
 
@@ -146,8 +141,8 @@ module LdapAccountManage
           next
         end
 
-        check = Cracklib::Password.new(password)
-        unless check.strong?
+        check = injector.cracklib.check_password(password)
+        unless check[:is_strong]
           cli.say(cli.color("Weak password! #{check.message}", :red))
           next
         end

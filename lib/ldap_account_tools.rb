@@ -1,3 +1,4 @@
 # frozen_string_literal: true
 
-require 'gitlabomni_manage_tools/application'
+require 'ldap_account_tools/util/error'
+require 'ldap_account_tools/application'

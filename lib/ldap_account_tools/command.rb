@@ -3,6 +3,7 @@
 require 'thor'
 
 require_relative 'config'
+require_relative 'injector'
 
 Dir.glob(
   File.expand_path('command/*.rb', __dir__)
@@ -28,9 +29,11 @@ module LdapAccountManage
     desc 'useradd [options] USER', 'add user'
     method_option :interactive, type: :boolean, default: true,
       desc: 'enable interactive mode'
-    method_option :uidnumber, type: :number,
+    method_option :uidnumber, type: :numeric,
+      banner: 'NUM',
       desc: 'UID'
-    method_option :gidnumber, type: :number,
+    method_option :gidnumber, type: :numeric,
+      banner: 'NUM',
       desc: 'GID'
     method_option :familyname, type: :string,
       banner: 'NAME',

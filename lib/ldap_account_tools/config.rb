@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'yaml'
+require_relative 'util/base'
 
 module LdapAccountManage
   class Config
@@ -32,6 +33,7 @@ module LdapAccountManage
 
         {
           'general' => {
+            'uid_start' => 2000,
             'data_dir' => '/var/lib/ldap-manage/data',
             'cache_dir' => '/var/lib/ldap-manage/cache',
             'lock_dir' => '/var/lock/ldap-manage'
@@ -42,6 +44,9 @@ module LdapAccountManage
             'port' => 25,
             'from' => "noreply@#{hostname}",
             'disable_tls' => false
+          },
+          'ldap' => {
+            'uri' => 'ldapi:///'
           }
         }
       end

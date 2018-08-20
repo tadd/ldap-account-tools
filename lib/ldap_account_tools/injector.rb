@@ -1,5 +1,11 @@
 # frozen_string_literal: true
 
+Dir.glob(
+  File.expand_path('injector/*.rb', __dir__)
+).each do |entry|
+  require_relative entry
+end
+
 module LdapAccountManage
   class Injector
     class << self
@@ -8,14 +14,12 @@ module LdapAccountManage
       end
     end
 
-    def initialize(datas)
-      @datas = Util.deep_merge_hash(
-        datas, Config.default_config
-      )
+    include LdapAccountManage::SubInjector
+
+    def initialize(conf)
+      @ldap = LdapAccount.new(conf)
     end
 
-    def get(key)
-      @datas[key]
-    end
+    attr_reader :ldap
   end
 end
