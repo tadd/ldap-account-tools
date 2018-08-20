@@ -11,7 +11,7 @@ module LdapAccountManage
       end
 
       def initialize(config)
-        @use_cracklib = config['use_cracklib']
+        @use_cracklib = config['general']['use_cracklib']
         if @use_cracklib
           require 'rubylibcrack'
         end

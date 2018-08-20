@@ -164,7 +164,7 @@ module LdapAccountManage
 
       loop do
         password = cli.ask('Enter your password: ') do |q|
-          q.echo = 'x'
+          q.echo = '*'
         end
         if password.size <= 11
           cli.say(cli.color('Too small password! Should be >=12 characters', :red))
@@ -178,7 +178,7 @@ module LdapAccountManage
         end
 
         repassword = cli.ask('Confirm your password: ') do |q|
-          q.echo = 'x'
+          q.echo = '*'
         end
         if password != repassword
           cli.say(cli.color('Password mismatch!', :red))

@@ -18,8 +18,10 @@ module LdapAccountManage
 
     def initialize(conf)
       @ldap = LdapAccount.new(conf)
+      @cracklib = CrackLib.new(conf)
     end
 
     attr_reader :ldap
+    attr_reader :cracklib
   end
 end
