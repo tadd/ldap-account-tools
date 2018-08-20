@@ -42,11 +42,11 @@ module LdapAccountManage
         ],
         cn: username,
         gidNumber: userdata[:gidnumber],
-        memberUid: [username]
+        memberUid: username
       )
     end
 
-    def before_useradd(username, userdata, ldap)
+    def before_useradd(username, _userdata, ldap)
       if ldap.user_exists?(username)
         raise Util.ToolOperationError, format('already user exists: %<user>s', user: username)
       end
@@ -56,7 +56,7 @@ module LdapAccountManage
       Util.lockfile(config, USERADD_LOCKFILE) do
         if userdata[:uidnumber].nil?
           userdata[:uidnumber] = ldap.next_uidnumber
-        else
+        end
         if userdata[:gidnumber].nil?
           userdata[:gidnumber] = userdata[:uidnumber]
         end
@@ -134,9 +134,9 @@ module LdapAccountManage
           end
         end
 
-      userdata[:lang] =
-        if !options[:lang].nil?
-          options[:lang]
+      userdata[:phonenumber] =
+        if !options[:phonenumber].nil?
+          options[:phonenumber]
         else
           cli.ask('Phone number []: ') do |q|
             q.validate = /^\+?[0-9]{4}[0-9]*$/
@@ -194,10 +194,10 @@ module LdapAccountManage
 
       after_useradd(username, userdata, injector.ldap, config)
     end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/PerceivedComplexity
+    # rubocop:enable Metrics/CyclomaticComplexity
   end
-  # rubocop:enable Metrics/AbcSize
-  # rubocop:enable Metrics/PerceivedComplexity
-  # rubocop:enable Metrics/CyclomaticComplexity
 
   module SubCommand
     def command_useradd(username)
