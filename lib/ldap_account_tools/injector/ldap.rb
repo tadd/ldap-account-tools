@@ -44,7 +44,11 @@ module LdapAccountManage
     end
 
     def useradd(attrs)
-      dn = 'cn=%<cn>s,%<userbase>s'.format(cn: attrs[:cn], userbase: @userbase)
+      dn = format(
+        'cn=%<cn>s,%<userbase>s',
+        cn: attrs[:cn],
+        userbase: @userbase
+      )
       @ldap.add(
         dn: dn,
         attributes: attrs
@@ -52,7 +56,8 @@ module LdapAccountManage
     end
 
     def groupadd(attrs)
-      dn = 'cn=%<cn>s,%<groupbase>s'.format(
+      dn = format(
+        'cn=%<cn>s,%<groupbase>s',
         cn: attrs[:cn],
         groupbase: @groupbase
       )

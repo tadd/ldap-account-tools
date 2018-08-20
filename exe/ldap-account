@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'ldap_account_tools'
+
+TOOL_OPERATION_ERROR_CODE = 7
+
+begin
+  LdapAccountManage.application.run
+rescue LdapAccountManage::Util::ToolOperationError => err
+  STDERR.puts err.message
+
+  exit TOOL_OPERATION_ERROR_CODE
+end

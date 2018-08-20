@@ -53,7 +53,7 @@ module LdapAccountManage
 
     def before_useradd(username, _userdata)
       if user_exists?(username)
-        raise Util.ToolOperationError, 'already user exists: %<user>s'.format(user: username)
+        raise Util.ToolOperationError, format('already user exists: %<user>s', user: username)
       end
     end
 
@@ -78,21 +78,25 @@ module LdapAccountManage
       # after_useradd(username, userdata, ldap, config)
     end
 
-    def interactive_useradd(username, userdata, injector, config) # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/PerceivedComplexity
+    # rubocop:disable Metrics/CyclomaticComplexity
+    def interactive_useradd(username, userdata, injector, config)
       before_useradd(username, userdata)
 
       cli = HighLine.new
 
       if userdata[:familyname].nil?
-        userdata[:familyname] = HighLine.new.ask('Family Name: ').downcase
+        userdata[:familyname] = cli.ask('Family name: ').downcase
       end
 
       if userdata[:givenname].nil?
-        userdata[:givenname] = HighLine.new.ask('Given Name: ').downcase
+        userdata[:givenname] = cli.ask('Given name: ').downcase
       end
 
       if userdata[:displayname].nil?
-        userdata[:displayname] = '%<given> %<family>'.format(
+        userdata[:displayname] = format(
+          '%<given> %<family>',
           given: userdata[:givenname].capitalize,
           family: userdata[:familyname].capitalize
         )
@@ -101,21 +105,36 @@ module LdapAccountManage
       if userdata[:mail].nil?
         userdata[:mail] =
           if config['common']['mailhost'].nil?
-            '%<user>s@%<host>s'.format(
+            format(
+              '%<user>s@%<host>s',
               user: username,
               host: config['common']['mailhost']
             )
           else
-            HighLine.new.ask('E-Mail []: ') do |q|
+            cli.ask('Mail address []: ') do |q|
               q.validate = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i
             end
           end
       end
 
       if userdata[:lang].nil?
-        userdata[:lang] = HighLine.new.ask('Preferred language [%<lang>s]: '.format(ENV['LANG'])) do |q|
-          q.default = ENV['LANG']
+        userdata[:lang] = cli.ask(format('Preferred language [%<lang>s]: ', lang: ENV['LANG']))
+        userdata[:lang] = ENV['LANG'] if userdata[:lang] == ''
+      end
+
+      if userdata[:lang].nil?
+        userdata[:lang] = cli.ask('Phone number []: ') do |q|
+          q.validate = /^\+?[0-9]{4}[0-9]*$/
         end
+      end
+
+      if userdata[:lang].nil?
+        userdata[:lang] = cli.ask('Login shell [/bin/bash]: ')
+        userdata[:lang] = '/bin/bash' if userdata[:lang] == ''
+      end
+
+      if userdata[:homedir].nil?
+        userdata[:homedir] = format('/home/%<user>s', user: username)
       end
 
       loop do
@@ -151,6 +170,9 @@ module LdapAccountManage
       after_useradd(username, userdata, injector.ldap, config)
     end
   end
+  # rubocop:enable Metrics/AbcSize
+  # rubocop:enable Metrics/PerceivedComplexity
+  # rubocop:enable Metrics/CyclomaticComplexity
 
   module SubCommand
     def command_useradd(username)
