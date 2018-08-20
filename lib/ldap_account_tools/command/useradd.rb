@@ -122,7 +122,7 @@ module LdapAccountManage
               ''
             end
           mail = cli.ask(format('Mail address [%<default>s]: ', default: mail_default)) do |q|
-            q.validate = /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i
+            q.validate = /(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i
           end
           if mail == ''
             mail_default
@@ -148,7 +148,7 @@ module LdapAccountManage
           options[:phonenumber]
         else
           phone = cli.ask('Phone number []: ') do |q|
-            q.validate = /^\+?[0-9]*$/
+            q.validate = /^(|\+?[0-9]{6}[0-9]*)$/
           end
           if phone == ''
             '00000000000'

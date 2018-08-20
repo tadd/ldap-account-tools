@@ -23,7 +23,7 @@ module LdapAccountManage
 
       def default_paths
         [
-          '/etc/ldap-manage/config.yaml',
+          '/etc/ldap-account-tools/config.yaml',
           'config.yaml'
         ].select { |path| File.exist?(path) }
       end
