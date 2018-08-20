@@ -12,6 +12,19 @@ module LdapAccountManage
         @ldap = Net::LDAP.new(
           host: 'localhost'
         )
+
+        @userbase =
+          if !config['ldap']['userbase'].nil?
+            config['ldap']['userbase']
+          else
+            'ou=people,' + config['ldap']['base']
+          end
+        @groupbase =
+          if !config['ldap']['groupbase'].nil?
+            config['ldap']['groupbase']
+          else
+            'ou=group,' + config['ldap']['base']
+          end
       end
 
       def user_exists?(username)

@@ -50,7 +50,9 @@ module LdapAccountManage
             'disable_tls' => false
           },
           'ldap' => {
-            'uri' => 'ldapi:///'
+            'host' => 'ldap',
+            'port' => 389,
+            'base' => 'dc=iwasaki-local,dc=cs,dc=uec,dc=ac,dc=jp'
           }
         }
       end
