@@ -101,7 +101,7 @@ module LdapAccountManage
           options[:displayname]
         else
           format(
-            '%<given> %<family>',
+            '%<given>s %<family>s',
             given: userdata[:givenname].capitalize,
             family: userdata[:familyname].capitalize
           )
