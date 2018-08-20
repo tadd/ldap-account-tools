@@ -11,7 +11,7 @@ module LdapAccountManage
     USERADD_LOCKFILE = 'useradd.lock'
 
     def _useradd(username, userdata, injector)
-      password_hash = injector.cracklib.crypt_hash(userdata[:password])
+      password_hash = '{CRYPT}' + injector.cracklib.crypt_hash(userdata[:password])
       gecos = userdata[:displayname]
 
       injector.ldap.useradd(
@@ -176,35 +176,38 @@ module LdapAccountManage
           format('/home/%<user>s', user: username)
         end
 
-      loop do
-        password = cli.ask('Enter your password: ') do |q|
-          q.echo = '*'
-        end
-        if password.size <= 11
-          cli.say(cli.color('Too small password! Should be >=12 characters', :red))
-          next
-        end
+      userdata[:password] =
+        if !options[:password].nil?
+          options[:password]
+        else
+          loop do
+            password = cli.ask('Enter your password: ') do |q|
+              q.echo = '*'
+            end
+            if password.size <= 11
+              cli.say(cli.color('Too small password! Should be >=12 characters', :red))
+              next
+            end
 
-        check = injector.cracklib.check_password(password)
-        unless check[:is_strong]
-          cli.say(cli.color("Weak password! #{check.message}", :red))
-          next
-        end
+            check = injector.cracklib.check_password(password)
+            unless check[:is_strong]
+              cli.say(cli.color("Weak password! #{check[:message]}", :red))
+              next
+            end
 
-        repassword = cli.ask('Confirm your password: ') do |q|
-          q.echo = '*'
-        end
-        if password != repassword
-          cli.say(cli.color('Password mismatch!', :red))
-          next
-        end
+            repassword = cli.ask('Confirm your password: ') do |q|
+              q.echo = '*'
+            end
+            if password != repassword
+              cli.say(cli.color('Password mismatch!', :red))
+              next
+            end
 
-        userdata[:password] = password
-        password = nil # rubocop:disable Lint/UselessAssignment
-        repassword = nil # rubocop:disable Lint/UselessAssignment
+            break
+          end
 
-        break
-      end
+          password
+        end
 
       after_useradd(username, userdata, injector, config)
 

@@ -38,6 +38,10 @@ Metrics/LineLength:
   Enabled: true
   Max: 120
 
+Metrics/AbcSize:
+  Enabled: true
+  Max: 25
+
 Metrics/ModuleLength:
   Enabled: false
 

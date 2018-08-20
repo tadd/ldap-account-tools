@@ -14,7 +14,8 @@ module LdapAccountManage
         if @use_cracklib
           check = Cracklib::Password.new(password)
           {
-            is_strong: check.strong?
+            is_strong: check.strong?,
+            message: check.message
           }
         else
           {
