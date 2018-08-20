@@ -207,6 +207,8 @@ module LdapAccountManage
       end
 
       after_useradd(username, userdata, injector, config)
+
+      cli.say(cli.color('Success to create your account.', :green))
     end
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
