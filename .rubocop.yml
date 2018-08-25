@@ -22,6 +22,9 @@ Style/FrozenStringLiteralComment:
 Style/Documentation:
   Enabled: false
 
+Style/NumericPredicate:
+  Enabled: false
+
 Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
 
@@ -38,10 +41,6 @@ Metrics/LineLength:
   Enabled: true
   Max: 120
 
-Metrics/AbcSize:
-  Enabled: true
-  Max: 25
-
 Metrics/ModuleLength:
   Enabled: false
 
@@ -49,7 +48,10 @@ Metrics/MethodLength:
   Enabled: false
 
 Metrics/AbcSize:
-  Max: 20
+  Max: 25
 
 Metrics/CyclomaticComplexity:
   Max: 12
+
+Metrics/ClassLength:
+  Enabled: false

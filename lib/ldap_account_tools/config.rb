@@ -4,6 +4,8 @@ require 'yaml'
 require_relative 'util/base'
 
 module LdapAccountManage
+  class IllegalConfigError < StandardError; end
+
   class Config
     class << self
       def load(path)
@@ -11,7 +13,11 @@ module LdapAccountManage
 
         config_obj =
           if !path.nil?
-            YAML.load_file(path)
+            begin
+              YAML.load_file(path)
+            rescue Errno::ENOENT => err
+              raise IllegalConfigError, "Cannot load config: #{err.message}"
+            end
           elsif paths.size.positive?
             YAML.load_file(paths[0])
           else
@@ -30,30 +36,28 @@ module LdapAccountManage
 
       def default_config
         hostname = Util.hostfullname
+        basename = hostname.split('.').map { |s| 'dc=' + s }.join(',')
 
         {
           'general' => {
-            'use_cracklib' => true,
             'uid_start' => 2000,
             'data_dir' => '/var/lib/ldap-account-tools/data',
             'cache_dir' => '/var/lib/ldap-account-tools/cache',
             'lock_dir' => '/var/lock/ldap-account-tools'
           },
           'common' => {
-            'mailhost' => hostname
-          },
-          'mail' => {
-            'enable' => false,
-            'host' => 'localhost',
-            'port' => 25,
-            'from' => "noreply@#{hostname}",
-            'disable_tls' => false
           },
           'ldap' => {
             'host' => 'localhost',
             'port' => 389,
-            'auth_method' => 'simple',
-            'base' => 'dc=iwasaki-local,dc=cs,dc=uec,dc=ac,dc=jp'
+            'base' => basename,
+            'root_info' => {
+              'uid' => [0],
+              'superuser_is_readable_user' => false,
+              'auth_method' => 'simple',
+              'dn' => 'cn=Manager,' + basename,
+              'password_file' => '/etc/ldap-account-tools/private/ldap_password'
+            }
           }
         }
       end

@@ -34,3 +34,18 @@
     $ sudo chmod +x /usr/local/bin/ldap-account
     $ ldap-account help # for checking
     ```
+
+5. Place config
+
+    ```bash
+    $ sudo sh -c 'cat > /etc/ldap-account-tools/config.yaml'
+    general:
+      uid_start: 2000
+
+    ldap:
+      host: localhost
+      port: 389
+      base: 'dc=example,dc=com'
+      root_info:
+        dn: 'cn=Manager,dc=example,dc=com'
+        password_file: '/etc/ldap-accout-tools/private/ldap_password

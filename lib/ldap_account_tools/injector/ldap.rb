@@ -1,17 +1,32 @@
 # frozen_string_literal: true
 
 require 'net-ldap'
+require_relative '../config'
 
 module LdapAccountManage
   module SubInjector
     class LdapError < StandardError; end
 
     class LdapAccount
-      def initialize(config) # rubocop:disable Metrics/AbcSize
+      def initialize(config, runenv_injector) # rubocop:disable Metrics/AbcSize
         @uid_start = config['general']['uid_start']
+
+        auth_method = config['ldap']['root_info']['auth_method']
+        auth_info =
+          if auth_method == 'simple'
+            {
+              method: :simple,
+              username: config['ldap']['root_info']['rootbn'],
+              password: runenv_injector.ldap_password
+            }
+          else
+            raise IllegalConfigError, "'#{auth_method}'' is not supported method"
+          end
+
         @ldap = Net::LDAP.new(
           host: config['ldap']['host'],
-          port: config['ldap']['port']
+          port: config['ldap']['port'],
+          auth: auth_info
         )
 
         @userbase =

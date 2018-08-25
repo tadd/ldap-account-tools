@@ -17,7 +17,8 @@ module LdapAccountManage
     include LdapAccountManage::SubInjector
 
     def initialize(conf)
-      @ldap = LdapAccount.new(conf)
+      @runenv = RunEnv.new(conf)
+      @ldap = LdapAccount.new(conf, @runenv)
       @cracklib = CrackLib.new(conf)
     end
 

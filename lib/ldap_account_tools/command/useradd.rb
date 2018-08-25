@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'thor'
 require 'highline'
 require_relative '../util/lock'
 require_relative '../util/error'
@@ -105,6 +106,13 @@ module LdapAccountManage
             given: userdata[:givenname].capitalize,
             family: userdata[:familyname].capitalize
           )
+        end
+
+      userdata[:description] =
+        if !options[:desc].nil?
+          options[:desc]
+        else
+          'No description.'
         end
 
       userdata[:mail] =
@@ -218,8 +226,47 @@ module LdapAccountManage
     # rubocop:enable Metrics/CyclomaticComplexity
   end
 
-  module SubCommand
-    def command_useradd(username)
+  class Command
+    desc 'useradd [options] USER', 'add an user to LDAP'
+    method_option :interactive, type: :boolean, default: true,
+      desc: 'enable interactive mode'
+    method_option :uidnumber, type: :numeric,
+      banner: 'NUM',
+      desc: 'UID'
+    method_option :gidnumber, type: :numeric,
+      banner: 'NUM',
+      desc: 'GID'
+    method_option :familyname, type: :string,
+      banner: 'NAME',
+      desc: 'Family Name'
+    method_option :givenname, type: :string,
+      banner: 'NAME',
+      desc: 'Given Name'
+    method_option :displayname, type: :string,
+      banner: 'NAME',
+      desc: 'Display Name'
+    method_option :desc, type: :string,
+      banner: 'TEXT',
+      desc: 'Description'
+    method_option :password, type: :string,
+      banner: 'PASSWORD',
+      desc: 'password (normally, you should input by tty)'
+    method_option :mail, type: :string,
+      banner: 'EMAIL',
+      desc: 'email address'
+    method_option :lang, type: :string,
+      banner: 'LANG',
+      desc: 'preferred language'
+    method_option :phonenumber, type: :string,
+      banner: 'PHONE',
+      desc: 'telephone number'
+    method_option :shell, type: :string,
+      banner: 'SHELL',
+      desc: 'login shell'
+    method_option :homedir, type: :string,
+      banner: 'DIR',
+      desc: 'home directory'
+    def useradd(username)
       if options[:interactive]
         UserAdd.interactive_useradd(username, options, @injector, @config)
       else

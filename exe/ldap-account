@@ -3,12 +3,17 @@
 
 require 'ldap_account_tools'
 
-TOOL_OPERATION_ERROR_CODE = 7
+ILLEGAL_CONFIG_ERROR_CODE = 7
+TOOL_OPERATION_ERROR_CODE = 8
 
 begin
   LdapAccountManage.application.run
 rescue LdapAccountManage::Util::ToolOperationError => err
-  STDERR.puts err.message
+  STDERR.puts "Error: #{err.message}"
 
   exit TOOL_OPERATION_ERROR_CODE
+rescue LdapAccountManage::IllegalConfigError => err
+  STDERR.puts "Config error: #{err.message}"
+
+  exit ILLEGAL_CONFIG_ERROR_CODE
 end
