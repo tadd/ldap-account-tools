@@ -13,7 +13,7 @@ module LdapAccountManage
 
     def _useradd(username, userdata, injector)
       password_hash = '{CRYPT}' + injector.cracklib.crypt_hash(userdata[:password])
-      gecos = userdata[:displayname]
+      gecos = userdata[:displayname] + ',' + userdata[:description]
 
       injector.ldap.useradd(
         objectClass: %w[
@@ -27,6 +27,7 @@ module LdapAccountManage
         sn: userdata[:familyname],
         givenName: userdata[:givenname],
         displayName: userdata[:displayname],
+        description: userdata[:description],
         mail: userdata[:mail],
         preferredLanguage: userdata[:lang],
         telephoneNumber: userdata[:phonenumber],
@@ -43,13 +44,51 @@ module LdapAccountManage
         ],
         cn: username,
         gidNumber: userdata[:gidnumber],
+        description: "The primary group of #{username}",
         memberUid: username
       )
     end
 
-    def before_useradd(username, _userdata, ldap)
+    def before_useradd(username, userdata, ldap)
       if ldap.user_exists?(username)
-        raise Util::ToolOperationError, format('already user exists: %<user>s', user: username)
+        raise Util::ToolOperationError, "already user exists: #{username}"
+      end
+
+      unless userdata[:uidnumber].nil?
+        if ldap.user_exists_by_uid?(userdata[:uidnumber])
+          raise Util::ToolOperationError, "UID number #{userdata[:uidnumber]} is already used"
+        end
+      end
+
+      unless userdata[:gidnumber].nil?
+        if ldap.group_exists_by_gid?(userdata[:gidnumber])
+          raise Util::ToolOperationError, "GID number #{userdata[:gidnumber]} is already used"
+        end
+      end
+
+      unless userdata[:familyname].nil?
+        unless /[[:lower:]]/ =~ userdata[:familyname]
+          raise Util::ToolOperationError, 'Family name must be given by lowercase.'
+        end
+      end
+
+      unless userdata[:givenname].nil?
+        unless /[[:lower:]]/ =~ userdata[:givenname]
+          raise Util::ToolOperationError, 'Given name must be given by lowercase.'
+        end
+      end
+
+      unless userdata[:password].nil?
+        password = userdata[:password]
+
+        if password.size < 12
+          raise Util::ToolOperationError, 'Password should have >=12 characters'
+        end
+
+        check = injector.cracklib.check_password(password)
+        unless check[:is_strong]
+          raise Util::ToolOperationError, "Password is weak: #{check[:message]}"
+        end
       end
     end
 
@@ -66,12 +105,135 @@ module LdapAccountManage
       end
     end
 
-    def useradd(_username, _userdata, _injector, _config)
-      # before_useradd(username, userdata)
+    def useradd(username, options, injector, _onfig)
+      before_useradd(username, options, injector.ldap)
 
-      raise Util::ToolOperationError, 'not implemented'
+      cli = HighLine.new
 
-      # after_useradd(username, userdata, ldap, config)
+      userdata = {}
+
+      unless options[:uidnumber]
+        userdata[:uidnumber] = options[:uidnumber]
+      end
+
+      userdata[:familyname] =
+        if !options[:familyname].nil?
+          options[:familyname]
+        else
+          raise Util::ToolOperationError, 'Must specify any family name'
+        end
+
+      userdata[:givenname] =
+        if !options[:givenname].nil?
+          options[:givenname]
+        else
+          raise Util::ToolOperationError, 'Must specify any given name'
+        end
+
+      userdata[:displayname] =
+        if !options[:displayname].nil?
+          options[:displayname]
+        else
+          format(
+            '%<given>s %<family>s',
+            given: userdata[:givenname].capitalize,
+            family: userdata[:familyname].capitalize
+          )
+        end
+
+      userdata[:description] =
+        if !options[:desc].nil?
+          options[:desc]
+        else
+          'No description.'
+        end
+
+      userdata[:mail] =
+        if !options[:mail].nil?
+          options[:mail]
+        elsif !config['common']['mailhost'].nil?
+          format(
+            '%<user>s@%<host>s',
+            user: username,
+            host: config['common']['mailhost']
+          )
+        else
+          ''
+        end
+
+      userdata[:lang] =
+        if !options[:lang].nil?
+          options[:lang]
+        else
+          injector.runenv.lang
+        end
+
+      userdata[:phonenumber] =
+        if !options[:phonenumber].nil?
+          options[:phonenumber]
+        else
+          '00000000000'
+        end
+
+      userdata[:shell] =
+        if !options[:shell].nil?
+          options[:shell]
+        else
+          '/bin/bash'
+        end
+
+      userdata[:homedir] =
+        if !options[:homedir].nil?
+          options[:homedir]
+        else
+          "/home/#{username}"
+        end
+
+      userdata[:password] =
+        if !options[:password].nil?
+          options[:password]
+        else
+          loop do
+            password = cli.ask('Enter your password: ') do |q|
+              q.echo = false
+            end
+            if password.size < 12
+              cli.say(cli.color('Too small password! Should be >=12 characters', :red))
+              next
+            end
+
+            check = injector.cracklib.check_password(password)
+            unless check[:is_strong]
+              cli.say(cli.color("Weak password! #{check[:message]}", :red))
+              next
+            end
+
+            repassword = cli.ask('Confirm your password: ') do |q|
+              q.echo = false
+            end
+            if password != repassword
+              cli.say(cli.color('Password mismatch!', :red))
+              next
+            end
+
+            break
+          end
+
+          password
+        end
+
+      after_useradd(username, userdata, injector, config)
+
+      cli.say(cli.color('Success to create your account.', :green))
+    end
+
+    def ask_message(name, default: nil)
+      cap_name = name.capitalize
+      if default.nil?
+        "\t#{cap_name}: "
+      else
+        "\t#{cap_name} [#{default}]: "
+      end
     end
 
     # rubocop:disable Metrics/AbcSize
@@ -83,18 +245,20 @@ module LdapAccountManage
       userdata = {}
       cli = HighLine.new
 
+      cli.say('Input user information:')
+
       userdata[:familyname] =
         if !options[:familyname].nil?
           options[:familyname]
         else
-          cli.ask('Family name: ').downcase
+          cli.ask(ask_message('family name')).downcase
         end
 
       userdata[:givenname] =
         if !options[:givenname].nil?
           options[:givenname]
         else
-          cli.ask('Given name: ').downcase
+          cli.ask(ask_message('given name')).downcase
         end
 
       userdata[:displayname] =
@@ -129,7 +293,7 @@ module LdapAccountManage
             else
               ''
             end
-          mail = cli.ask(format('Mail address [%<default>s]: ', default: mail_default)) do |q|
+          mail = cli.ask(ask_message('mail address', mail_default)) do |q|
             q.validate = /(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i
           end
           if mail == ''
@@ -143,9 +307,10 @@ module LdapAccountManage
         if !options[:lang].nil?
           options[:lang]
         else
-          lang = cli.ask(format('Preferred language [%<lang>s]: ', lang: ENV['LANG']))
+          lang_default = injector.runenv.lang
+          lang = cli.ask(ask_message('preferred language', lang_default))
           if lang == ''
-            ENV['LANG']
+            lang_default
           else
             lang
           end
@@ -219,7 +384,7 @@ module LdapAccountManage
 
       after_useradd(username, userdata, injector, config)
 
-      cli.say(cli.color('Success to create your account.', :green))
+      cli.say(cli.color('Success to create a user', :green) + ': ' + cli.color(username, :blue))
     end
     # rubocop:enable Metrics/AbcSize
     # rubocop:enable Metrics/PerceivedComplexity
@@ -238,13 +403,13 @@ module LdapAccountManage
       desc: 'GID'
     method_option :familyname, type: :string,
       banner: 'NAME',
-      desc: 'Family Name'
+      desc: 'Family Name (lower case)'
     method_option :givenname, type: :string,
       banner: 'NAME',
-      desc: 'Given Name'
+      desc: 'Given Name (lower case)'
     method_option :displayname, type: :string,
       banner: 'NAME',
-      desc: 'Display Name'
+      desc: 'Display Name (usually, given by full name)'
     method_option :desc, type: :string,
       banner: 'TEXT',
       desc: 'Description'
@@ -263,6 +428,9 @@ module LdapAccountManage
     method_option :shell, type: :string,
       banner: 'SHELL',
       desc: 'login shell'
+    method_option :group, type: :string,
+      banner: 'GROUP,GROUP,...',
+      desc: 'extra groups'
     method_option :homedir, type: :string,
       banner: 'DIR',
       desc: 'home directory'

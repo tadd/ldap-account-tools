@@ -40,7 +40,8 @@ module LdapAccountManage
 
         {
           'general' => {
-            'uid_start' => 2000,
+            'uid_start' => 2_000,
+            'gid_start' => 30_000,
             'data_dir' => '/var/lib/ldap-account-tools/data',
             'cache_dir' => '/var/lib/ldap-account-tools/cache',
             'lock_dir' => '/var/lock/ldap-account-tools'

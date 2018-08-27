@@ -41,12 +41,58 @@ module LdapAccountManage
           else
             'ou=group,' + config['ldap']['base']
           end
+
+        @user_filter = Net::LDAP::Filter.eq('objectClass', 'posixAccount')
+        @group_filter = Net::LDAP::Filter.eq('objectClass', 'posixGroup')
+      end
+
+      attr_reader :userbase
+      attr_reader :groupbase
+
+      attr_reader :user_filter
+      attr_reader :group_filter
+
+      def report_error(result)
+        raise LdapError, format(
+          '%<title>s: %<detail>s',
+          title: result.message,
+          detail: result.error_message
+        )
+      end
+
+      def ldap_add(options)
+        result = @ldap.add(options)
+        if result
+          result
+        else
+          report_error(@ldap.get_operation_result)
+        end
+      end
+
+      def ldap_search(options, &block)
+        result = @ldap.search(options, &block)
+        if result
+          result
+        else
+          report_error(@ldap.get_operation_result)
+        end
       end
 
       def user_exists?(username)
-        result = @ldap.search(
-          base: @userbase,
-          filter: Net::LDAP::Filter.eq('objectClass', 'posixAccount').&(Net::LDAP::Filter.eq('uid', username)),
+        result = ldap_search(
+          base: userbase,
+          filter: user_filter.&(Net::LDAP::Filter.eq('uid', username)),
+          attributes: %w[
+            cn
+          ]
+        )
+        result.size.positive?
+      end
+
+      def user_exists_by_uid?(uid)
+        result = ldap_search(
+          base: userbase,
+          filter: user_filter.&(Net::LDAP::Filter.eq('uidNumber', uid)),
           attributes: %w[
             cn
           ]
@@ -56,9 +102,9 @@ module LdapAccountManage
 
       def next_uidnumber
         uid_numbers = Hash.new(false)
-        @ldap.search(
-          base: @userbase,
-          filter: Net::LDAP::Filter.eq('objectClass', 'posixAccount'),
+        ldap_search(
+          base: userbase,
+          filter: user_filter,
           attributes: %w[
             uidNumber
           ]
@@ -77,12 +123,49 @@ module LdapAccountManage
         uid
       end
 
-      def report_error(result)
-        raise LdapError, format(
-          '%<title>s: %<detail>s',
-          title: result.message,
-          detail: result.error_message
+      def group_exists?(groupname)
+        result = ldap_search(
+          base: groupbase,
+          filter: group_filter.&(Net::LDAP::Filter.eq('cn', groupname)),
+          attributes: %w[
+            cn
+          ]
         )
+        result.size.positive?
+      end
+
+      def group_exists_by_uid?(gid)
+        result = ldap_search(
+          base: groupbase,
+          filter: group_filter.&(Net::LDAP::Filter.eq('gidNumber', gid)),
+          attributes: %w[
+            cn
+          ]
+        )
+        result.size.positive?
+      end
+
+      def next_gidnumber
+        gid_numbers = Hash.new(false)
+        ldap_search(
+          base: groupbase,
+          filter: group_filter,
+          attributes: %w[
+            gidNumber
+          ]
+        ) do |entry|
+          entry.gidnumber.each do |num|
+            gid_numbers[num] = true
+          end
+        end
+
+        gid = @gid_start
+        loop do
+          break unless gid_numbers[gid.to_s]
+          gid += 1
+        end
+
+        gid
       end
 
       def useradd(attrs)
@@ -91,13 +174,10 @@ module LdapAccountManage
           cn: attrs[:cn],
           userbase: @userbase
         )
-        result = @ldap.add(
+        ldap_add(
           dn: dn,
           attributes: attrs
         )
-        unless result
-          report_error(@ldap.get_operation_result)
-        end
       end
 
       def groupadd(attrs)
@@ -106,13 +186,10 @@ module LdapAccountManage
           cn: attrs[:cn],
           groupbase: @groupbase
         )
-        result = @ldap.add(
+        ldap_add(
           dn: dn,
           attributes: attrs
         )
-        unless result
-          report_error(@ldap.get_operation_result)
-        end
       end
     end
   end

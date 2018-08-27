@@ -24,5 +24,6 @@ module LdapAccountManage
 
     attr_reader :ldap
     attr_reader :cracklib
+    attr_reader :runenv
   end
 end

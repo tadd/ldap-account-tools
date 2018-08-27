@@ -36,6 +36,10 @@ module LdapAccountManage
       Etc.getpwuid(uid)
     end
 
+    def lang
+      ENV['LANG']
+    end
+
     private
 
     def check_can_read_password(password_file, superuser_is_readable_user)

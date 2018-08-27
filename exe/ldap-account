@@ -5,6 +5,11 @@ require 'ldap_account_tools'
 
 ILLEGAL_CONFIG_ERROR_CODE = 7
 TOOL_OPERATION_ERROR_CODE = 8
+SIGINT_ERROR_CODE = 130
+
+Signal.trap('INT') do |_|
+  exit SIGINT_ERROR_CODE
+end
 
 begin
   LdapAccountManage.application.run
