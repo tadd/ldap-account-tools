@@ -25,6 +25,9 @@ Style/Documentation:
 Style/NumericPredicate:
   Enabled: false
 
+Style/UnneededCondition:
+  Enabled: false
+
 Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
 

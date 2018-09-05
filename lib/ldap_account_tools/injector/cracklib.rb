@@ -3,11 +3,14 @@
 module LdapAccountManage
   module SubInjector
     class CrackLib
-      def initialize(config)
-        @use_cracklib = config['general']['use_cracklib']
-        if @use_cracklib
-          require 'rubylibcrack'
-        end
+      def initialize(_config)
+        @use_cracklib =
+          begin
+            require 'rubylibcrack'
+            true
+          rescue LoadError
+            false
+          end
       end
 
       def check_password(password)

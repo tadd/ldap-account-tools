@@ -45,6 +45,29 @@ module LdapAccountManage
       end
     end
 
+    def groupadd(groupname, options, injector, config)
+      before_groupadd(groupname, options, injector.ldap)
+
+      cli = HighLine.new
+
+      groupdata = {}
+
+      unless options[:gidnumber].nil?
+        groupdata[:gidnumber] = options[:gidnumber]
+      end
+
+      groupdata[:description] =
+        if !options[:desc].nil?
+          options[:desc]
+        else
+          'No description.'
+        end
+
+      after_groupadd(groupname, groupdata, injector, config)
+
+      cli.say(cli.color('Success to create a group', :green) + ': ' + cli.color(groupname, :blue))
+    end
+
     def interactive_groupadd(groupname, options, injector, config)
       before_groupadd(groupname, options, injector.ldap)
 

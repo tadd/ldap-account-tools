@@ -25,7 +25,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency('lockfile')
   spec.add_dependency('mail')
   spec.add_dependency('net-ldap')
-  spec.add_dependency('rubylibcrack')
   spec.add_dependency('thor')
 
   spec.add_development_dependency('bundler')

@@ -58,6 +58,9 @@ module LdapAccountManage
               'auth_method' => 'simple',
               'dn' => 'cn=Manager,' + basename,
               'password_file' => '/etc/ldap-account-tools/private/ldap_password'
+            },
+            'user_info' => {
+              'auth_method' => 'simple'
             }
           }
         }

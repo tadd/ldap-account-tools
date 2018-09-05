@@ -6,7 +6,6 @@ PATH
       lockfile
       mail
       net-ldap
-      rubylibcrack
       thor
 
 GEM
@@ -77,6 +76,7 @@ DEPENDENCIES
   rake
   rspec
   rubocop
+  rubylibcrack
   simplecov
 
 BUNDLED WITH

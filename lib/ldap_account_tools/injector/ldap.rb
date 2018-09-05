@@ -7,44 +7,81 @@ module LdapAccountManage
   module SubInjector
     class LdapError < StandardError; end
 
-    class LdapAccount
-      def initialize(config, runenv_injector) # rubocop:disable Metrics/AbcSize
-        @uid_start = config['general']['uid_start']
+    class NetLdapWrapper
+      def initialize(options)
+        @ldap = Net::LDAP.new(options)
+      end
 
-        auth_method = config['ldap']['root_info']['auth_method']
-        auth_info =
-          if auth_method == 'simple'
-            {
-              method: :simple,
-              username: config['ldap']['root_info']['rootbn'],
-              password: runenv_injector.ldap_password
-            }
-          else
-            raise IllegalConfigError, "'#{auth_method}'' is not supported method"
-          end
+      def error_report_by_result(result)
+        "#{result.message}: #{result.error_message}"
+      end
 
-        @ldap = Net::LDAP.new(
-          host: config['ldap']['host'],
-          port: config['ldap']['port'],
-          auth: auth_info
-        )
+      def add(options)
+        result = @ldap.add(options)
+        if result
+          {
+            status: true,
+            content: result
+          }
+        else
+          {
+            status: false,
+            message: error_report_by_result(@ldap.get_operation_result)
+          }
+        end
+      end
 
-        @userbase =
-          if !config['ldap']['userbase'].nil?
-            config['ldap']['userbase']
-          else
-            'ou=people,' + config['ldap']['base']
-          end
-        @groupbase =
-          if !config['ldap']['groupbase'].nil?
-            config['ldap']['groupbase']
-          else
-            'ou=group,' + config['ldap']['base']
-          end
+      def modify(options)
+        result = @ldap.modify(options)
+        if result
+          {
+            status: true,
+            content: result
+          }
+        else
+          {
+            status: false,
+            message: error_report_by_result(@ldap.get_operation_result)
+          }
+        end
+      end
+
+      def search(options, &block)
+        result = @ldap.search(options, &block)
+        if result
+          {
+            status: true,
+            content: result
+          }
+        else
+          {
+            status: false,
+            message: error_report_by_result(@ldap.get_operation_result)
+          }
+        end
+      end
+    end
+
+    class LdapInstanceWrapper
+      def initialize(
+        ldap,
+        uid_start: uid_start, gid_start: gid_start,
+        userbase: userbase, groupbase: groupbase
+      )
+        @ldap = ldap
+
+        @uid_start = uid_start
+        @gid_start = gid_start
+
+        @userbase = userbase
+        @groupbase = groupbase
 
         @user_filter = Net::LDAP::Filter.eq('objectClass', 'posixAccount')
         @group_filter = Net::LDAP::Filter.eq('objectClass', 'posixGroup')
       end
+
+      attr_reader :uid_start
+      attr_reader :gid_start
 
       attr_reader :userbase
       attr_reader :groupbase
@@ -52,59 +89,72 @@ module LdapAccountManage
       attr_reader :user_filter
       attr_reader :group_filter
 
-      def report_error(result)
-        raise LdapError, format(
-          '%<title>s: %<detail>s',
-          title: result.message,
-          detail: result.error_message
-        )
-      end
-
-      def ldap_add(options)
-        result = @ldap.add(options)
-        if result
-          result
+      def from_result(result)
+        if result[:status]
+          result[:content]
         else
-          report_error(@ldap.get_operation_result)
+          raise LdapError, result[:message]
         end
       end
 
-      def ldap_search(options, &block)
-        result = @ldap.search(options, &block)
-        if result
-          result
-        else
-          report_error(@ldap.get_operation_result)
-        end
-      end
-
-      def user_exists?(username)
-        result = ldap_search(
+      def user_search(filter: filter, attributes: attrs, &block)
+        from_result(@ldap.search(
           base: userbase,
-          filter: user_filter.&(Net::LDAP::Filter.eq('uid', username)),
+          filter: user_filter.&(filter),
+          attributes: attrs,
+          &block
+        ))
+      end
+
+      def group_search(filter: filter, attributes: attrs, &block)
+        from_result(@ldap.search(
+          base: groupbase,
+          filter: group_filter.&(filter),
+          attributes: attrs,
+          &block
+        ))
+      end
+
+      def user_exists?(filter)
+        result = user_search(
+          filter: filter,
           attributes: %w[
             cn
           ]
         )
         result.size.positive?
+      end
+
+      def user_exists_by_name(name)
+        user_exists?(Net::LDAP::Filter.eq('uid', name))
       end
 
       def user_exists_by_uid?(uid)
-        result = ldap_search(
-          base: userbase,
-          filter: user_filter.&(Net::LDAP::Filter.eq('uidNumber', uid)),
+        user_exists?(Net::LDAP::Filter.eq('uidNumber', uid))
+      end
+
+      def group_exists?(filter)
+        result = group_search(
+          filter: filter,
           attributes: %w[
             cn
           ]
         )
         result.size.positive?
+      end
+
+      def group_exists_by_name(name)
+        group_exists?(Net::LDAP::Filter.eq('cn', name))
+      end
+
+      def group_exists_by_gid?(gid)
+        group_exists?(Net::LDAP::Filter.eq('gidNumber', gid))
       end
 
       def next_uidnumber
         uid_numbers = Hash.new(false)
-        ldap_search(
-          base: userbase,
-          filter: user_filter,
+        user_search(
+          filter: Net::LDAP::Filter.empty,
           attributes: %w[
             uidNumber
           ]
@@ -123,33 +173,10 @@ module LdapAccountManage
         uid
       end
 
-      def group_exists?(groupname)
-        result = ldap_search(
-          base: groupbase,
-          filter: group_filter.&(Net::LDAP::Filter.eq('cn', groupname)),
-          attributes: %w[
-            cn
-          ]
-        )
-        result.size.positive?
-      end
-
-      def group_exists_by_uid?(gid)
-        result = ldap_search(
-          base: groupbase,
-          filter: group_filter.&(Net::LDAP::Filter.eq('gidNumber', gid)),
-          attributes: %w[
-            cn
-          ]
-        )
-        result.size.positive?
-      end
-
       def next_gidnumber
         gid_numbers = Hash.new(false)
-        ldap_search(
-          base: groupbase,
-          filter: group_filter,
+        group_search(
+          filter: Net::LDAP::Filter.empty,
           attributes: %w[
             gidNumber
           ]
@@ -169,27 +196,98 @@ module LdapAccountManage
       end
 
       def useradd(attrs)
-        dn = format(
-          'cn=%<cn>s,%<userbase>s',
-          cn: attrs[:cn],
-          userbase: @userbase
-        )
-        ldap_add(
-          dn: dn,
+        from_result(@ldap.add(
+          dn: "cn=#{attrs[:cn]},#{userbase}",
           attributes: attrs
-        )
+        ))
       end
 
       def groupadd(attrs)
-        dn = format(
-          'cn=%<cn>s,%<groupbase>s',
-          cn: attrs[:cn],
-          groupbase: @groupbase
-        )
-        ldap_add(
-          dn: dn,
+        from_result(@ldap.add(
+          dn: "cn=#{attrs[:cn]},#{groupbase}",
           attributes: attrs
+        ))
+      end
+    end
+
+    class LdapAccount
+      def initialize(config)
+        @uid_start = config['general']['uid_start']
+        @gid_start = config['general']['gid_start']
+
+        @userbase =
+          if !config['ldap']['userbase'].nil?
+            config['ldap']['userbase']
+          else
+            'ou=people,' + config['ldap']['base']
+          end
+        @groupbase =
+          if !config['ldap']['groupbase'].nil?
+            config['ldap']['groupbase']
+          else
+            'ou=group,' + config['ldap']['base']
+          end
+
+        @superuser_auth_info = config['ldap']['root_info']
+        @user_auth_info = config['ldap']['user_info']
+
+        @ldap = Net::LDAP.new(
+          host: config['ldap']['host'],
+          port: config['ldap']['port'],
+          auth: auth_info
         )
+      end
+
+      def superuserbind_ldap(runenv_injector)
+        auth_method = @superuser_auth_info['auth_method']
+        auth_info =
+          if auth_method == 'anonymous'
+            {
+              method: :anonymous
+            }
+          elsif auth_method == 'simple'
+            {
+              method: :simple,
+              username: @superuser_auth_info['dn'],
+              password: runenv_injector.ldap_password
+            }
+          else
+            raise LdapError, "Unsupported auth method: #{auth_method}"
+          end
+
+        ldap = NetLdapWrapper.new(
+          host: ldap_host,
+          port: ldap_port,
+          auth: auth_info
+        )
+
+        LdapInstanceWrapper.new(ldap)
+      end
+
+      def userbind_ldap(username, password)
+        auth_method = @user_auth_info['auth_method']
+        auth_info =
+          if auth_method == 'anonymous'
+            {
+              method: :anonymous
+            }
+          elsif auth_method == 'simple'
+            {
+              method: :simple,
+              username: "cn=#{username},#{@userbase}",
+              password: password
+            }
+          else
+            raise LdapError, "Unsupported auth method: #{auth_method}"
+          end
+
+        ldap = NetLdapWrapper.new(
+          host: ldap_host,
+          port: ldap_port,
+          auth: auth_info
+        )
+
+        LdapInstanceWrapper.new(ldap)
       end
     end
   end
