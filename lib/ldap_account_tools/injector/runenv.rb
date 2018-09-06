@@ -2,6 +2,7 @@
 
 require 'etc'
 require_relative '../config'
+require_relative '../util/error'
 
 module LdapAccountManage
   class RunEnv
@@ -22,8 +23,10 @@ module LdapAccountManage
 
     def ldap_password
       unless run_user[:is_superuser]
-
+        raise Util::ToolOperationError, 'You are not the administrator.'
       end
+
+      File.read(@password_file).chomp
     end
 
     attr_reader :run_user

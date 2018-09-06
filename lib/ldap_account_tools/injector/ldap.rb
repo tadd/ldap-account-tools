@@ -65,8 +65,8 @@ module LdapAccountManage
     class LdapInstanceWrapper
       def initialize(
         ldap,
-        uid_start: uid_start, gid_start: gid_start,
-        userbase: userbase, groupbase: groupbase
+        uid_start:, gid_start:,
+        userbase:, groupbase:
       )
         @ldap = ldap
 
@@ -97,22 +97,26 @@ module LdapAccountManage
         end
       end
 
-      def user_search(filter: filter, attributes: attrs, &block)
-        from_result(@ldap.search(
-          base: userbase,
-          filter: user_filter.&(filter),
-          attributes: attrs,
-          &block
-        ))
+      def user_search(filter:, attributes:, &block)
+        from_result(
+          @ldap.search(
+            base: userbase,
+            filter: user_filter.&(filter),
+            attributes: attributes,
+            &block
+          )
+        )
       end
 
-      def group_search(filter: filter, attributes: attrs, &block)
-        from_result(@ldap.search(
-          base: groupbase,
-          filter: group_filter.&(filter),
-          attributes: attrs,
-          &block
-        ))
+      def group_search(filter:, attributes:, &block)
+        from_result(
+          @ldap.search(
+            base: groupbase,
+            filter: group_filter.&(filter),
+            attributes: attributes,
+            &block
+          )
+        )
       end
 
       def user_exists?(filter)
@@ -125,7 +129,7 @@ module LdapAccountManage
         result.size.positive?
       end
 
-      def user_exists_by_name(name)
+      def user_exists_by_name?(name)
         user_exists?(Net::LDAP::Filter.eq('uid', name))
       end
 
@@ -143,7 +147,7 @@ module LdapAccountManage
         result.size.positive?
       end
 
-      def group_exists_by_name(name)
+      def group_exists_by_name?(name)
         group_exists?(Net::LDAP::Filter.eq('cn', name))
       end
 
@@ -196,17 +200,21 @@ module LdapAccountManage
       end
 
       def useradd(attrs)
-        from_result(@ldap.add(
-          dn: "cn=#{attrs[:cn]},#{userbase}",
-          attributes: attrs
-        ))
+        from_result(
+          @ldap.add(
+            dn: "cn=#{attrs[:cn]},#{userbase}",
+            attributes: attrs
+          )
+        )
       end
 
       def groupadd(attrs)
-        from_result(@ldap.add(
-          dn: "cn=#{attrs[:cn]},#{groupbase}",
-          attributes: attrs
-        ))
+        from_result(
+          @ldap.add(
+            dn: "cn=#{attrs[:cn]},#{groupbase}",
+            attributes: attrs
+          )
+        )
       end
     end
 
@@ -228,15 +236,15 @@ module LdapAccountManage
             'ou=group,' + config['ldap']['base']
           end
 
+        @ldap_host = config['ldap']['host']
+        @ldap_port = config['ldap']['port']
+
         @superuser_auth_info = config['ldap']['root_info']
         @user_auth_info = config['ldap']['user_info']
-
-        @ldap = Net::LDAP.new(
-          host: config['ldap']['host'],
-          port: config['ldap']['port'],
-          auth: auth_info
-        )
       end
+
+      attr_reader :ldap_host
+      attr_reader :ldap_port
 
       def superuserbind_ldap(runenv_injector)
         auth_method = @superuser_auth_info['auth_method']
@@ -261,7 +269,11 @@ module LdapAccountManage
           auth: auth_info
         )
 
-        LdapInstanceWrapper.new(ldap)
+        LdapInstanceWrapper.new(
+          ldap,
+          uid_start: @uid_start, gid_start: @gid_start,
+          userbase: @userbase, groupbase: @groupbase
+        )
       end
 
       def userbind_ldap(username, password)
@@ -287,7 +299,11 @@ module LdapAccountManage
           auth: auth_info
         )
 
-        LdapInstanceWrapper.new(ldap)
+        LdapInstanceWrapper.new(
+          ldap,
+          uid_start: @uid_start, gid_start: @gid_start,
+          userbase: @userbase, groupbase: @groupbase
+        )
       end
     end
   end

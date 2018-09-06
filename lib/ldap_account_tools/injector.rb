@@ -18,7 +18,7 @@ module LdapAccountManage
 
     def initialize(conf)
       @runenv = RunEnv.new(conf)
-      @ldap = LdapAccount.new(conf, @runenv)
+      @ldap = LdapAccount.new(conf)
       @cracklib = CrackLib.new(conf)
     end
 

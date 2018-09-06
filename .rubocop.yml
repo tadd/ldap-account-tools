@@ -51,9 +51,14 @@ Metrics/MethodLength:
   Enabled: false
 
 Metrics/AbcSize:
+  Enabled: false
   Max: 25
 
+Metrics/PerceivedComplexity:
+  Enabled: false
+
 Metrics/CyclomaticComplexity:
+  Enabled: false
   Max: 12
 
 Metrics/ClassLength:

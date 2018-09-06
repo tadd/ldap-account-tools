@@ -11,11 +11,11 @@ module LdapAccountManage
 
     USERADD_LOCKFILE = 'useradd.lock'
 
-    def _useradd(username, userdata, injector)
+    def _useradd(username, userdata, ldap, injector)
       password_hash = '{CRYPT}' + injector.cracklib.crypt_hash(userdata[:password])
       gecos = userdata[:displayname] + ',' + userdata[:description]
 
-      injector.ldap.useradd(
+      ldap.useradd(
         objectClass: %w[
           inetOrgPerson
           posixAccount
@@ -38,7 +38,7 @@ module LdapAccountManage
         gecos: gecos
       )
 
-      injector.ldap.groupadd(
+      ldap.groupadd(
         objectClass: %w[
           posixGroup
         ],
@@ -50,7 +50,7 @@ module LdapAccountManage
     end
 
     def before_useradd(username, userdata, ldap)
-      if ldap.user_exists?(username)
+      if ldap.user_exists_by_name?(username)
         raise Util::ToolOperationError, "already user exists: #{username}"
       end
 
@@ -92,21 +92,23 @@ module LdapAccountManage
       end
     end
 
-    def after_useradd(username, userdata, injector, config)
+    def after_useradd(username, userdata, ldap, injector, config)
       Util.lockfile(config, USERADD_LOCKFILE) do
         if userdata[:uidnumber].nil?
-          userdata[:uidnumber] = injector.ldap.next_uidnumber.to_s
+          userdata[:uidnumber] = ldap.next_uidnumber.to_s
         end
         if userdata[:gidnumber].nil?
           userdata[:gidnumber] = userdata[:uidnumber]
         end
 
-        _useradd(username, userdata, injector)
+        _useradd(username, userdata, ldap, injector)
       end
     end
 
-    def useradd(username, options, injector, _onfig)
-      before_useradd(username, options, injector.ldap)
+    def useradd(username, options, injector, _config)
+      ldap = injector.ldap.superuserbind_ldap(injector.runenv)
+
+      before_useradd(username, options, ldap)
 
       cli = HighLine.new
 
@@ -222,7 +224,7 @@ module LdapAccountManage
           password
         end
 
-      after_useradd(username, userdata, injector, config)
+      after_useradd(username, userdata, ldap, injector, config)
 
       cli.say(cli.color('Success to create your account.', :green))
     end
@@ -236,11 +238,10 @@ module LdapAccountManage
       end
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/PerceivedComplexity
-    # rubocop:disable Metrics/CyclomaticComplexity
     def interactive_useradd(username, options, injector, config)
-      before_useradd(username, options, injector.ldap)
+      ldap = injector.ldap.superuserbind_ldap(injector.runenv)
+
+      before_useradd(username, options, ldap)
 
       userdata = {}
       cli = HighLine.new
@@ -382,13 +383,10 @@ module LdapAccountManage
           password
         end
 
-      after_useradd(username, userdata, injector, config)
+      after_useradd(username, userdata, ldap, injector, config)
 
       cli.say(cli.color('Success to create a user', :green) + ': ' + cli.color(username, :blue))
     end
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/PerceivedComplexity
-    # rubocop:enable Metrics/CyclomaticComplexity
   end
 
   class Command
