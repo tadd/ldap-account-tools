@@ -89,7 +89,8 @@ module LdapAccountManage
       attr_reader :user_filter
       attr_reader :group_filter
 
-      def from_result(result)
+      def from_result
+        result = yield
         if result[:status]
           result[:content]
         else
@@ -98,25 +99,25 @@ module LdapAccountManage
       end
 
       def user_search(filter:, attributes:, &block)
-        from_result(
+        from_result do
           @ldap.search(
             base: userbase,
             filter: user_filter.&(filter),
             attributes: attributes,
             &block
           )
-        )
+        end
       end
 
       def group_search(filter:, attributes:, &block)
-        from_result(
+        from_result do
           @ldap.search(
             base: groupbase,
             filter: group_filter.&(filter),
             attributes: attributes,
             &block
           )
-        )
+        end
       end
 
       def user_exists?(filter)
@@ -200,21 +201,21 @@ module LdapAccountManage
       end
 
       def useradd(attrs)
-        from_result(
+        from_result do
           @ldap.add(
             dn: "cn=#{attrs[:cn]},#{userbase}",
             attributes: attrs
           )
-        )
+        end
       end
 
       def groupadd(attrs)
-        from_result(
+        from_result do
           @ldap.add(
             dn: "cn=#{attrs[:cn]},#{groupbase}",
             attributes: attrs
           )
-        )
+        end
       end
     end
 

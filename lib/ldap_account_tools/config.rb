@@ -73,6 +73,10 @@ module LdapAccountManage
       )
     end
 
+    def to_yaml
+      YAML.dump(@datas).sub(/^---\n/, '')
+    end
+
     def [](key)
       @datas[key]
     end
