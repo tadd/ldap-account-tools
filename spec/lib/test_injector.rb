@@ -31,13 +31,10 @@ module LdapAccountManageSpec
       @auth = auth
     end
 
-    def search(options)
-      filter = options[:filter]
-      attributes = options[:attributes]
-
+    def search(base:, filter:, attributes:)
       result = []
 
-      if filter =~ /^cn=existsuser,/
+      if base =~ /ou=people,/ && filter.to_s =~ /uid=existsuser/
         entry = {}
         attributes.each do |attribute|
           case attribute
@@ -53,6 +50,15 @@ module LdapAccountManageSpec
 
         result.push(entry)
       end
+
+      {
+        status: true,
+        content: result
+      }
+    end
+
+    def add(_options)
+      result = []
 
       {
         status: true,

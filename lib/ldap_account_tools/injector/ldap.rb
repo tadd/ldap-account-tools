@@ -159,7 +159,7 @@ module LdapAccountManage
       def next_uidnumber
         uid_numbers = Hash.new(false)
         user_search(
-          filter: Net::LDAP::Filter.empty,
+          filter: Net::LDAP::Filter.ge('uidNumber', 0),
           attributes: %w[
             uidNumber
           ]
@@ -181,7 +181,7 @@ module LdapAccountManage
       def next_gidnumber
         gid_numbers = Hash.new(false)
         group_search(
-          filter: Net::LDAP::Filter.empty,
+          filter: Net::LDAP::Filter.ge('gidNumber', 0),
           attributes: %w[
             gidNumber
           ]

@@ -128,7 +128,7 @@ module LdapAccountManage
           next
         end
 
-        repassword = cli.ask("\tConfirm your password: ") do |q|
+        repassword = cli.ask("\tRetype the password: ") do |q|
           q.echo = '*'
         end
         if password != repassword
