@@ -13,8 +13,8 @@ SimpleCov.start do
   add_filter '/spec/'
   add_filter '/features/'
 
-  add_group 'Commands', 'lib/ldap_account_tools/commands'
-  add_group 'Utils', 'lib/ldap_account_tools/util'
+  add_group 'Command', 'lib/ldap_account_tools/command'
+  add_group 'Util', 'lib/ldap_account_tools/util'
 end
 
 require 'ldap_account_tools'

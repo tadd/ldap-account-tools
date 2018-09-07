@@ -220,7 +220,14 @@ module LdapAccountManage
     end
 
     class LdapAccount
-      def initialize(config)
+      def initialize(config, ldap: nil)
+        @ldap =
+          if ldap.nil?
+            NetLdapWrapper
+          else
+            ldap
+          end
+
         @uid_start = config['general']['uid_start']
         @gid_start = config['general']['gid_start']
 
@@ -264,7 +271,7 @@ module LdapAccountManage
             raise LdapError, "Unsupported auth method: #{auth_method}"
           end
 
-        ldap = NetLdapWrapper.new(
+        ldap = @ldap.new(
           host: ldap_host,
           port: ldap_port,
           auth: auth_info
@@ -294,7 +301,7 @@ module LdapAccountManage
             raise LdapError, "Unsupported auth method: #{auth_method}"
           end
 
-        ldap = NetLdapWrapper.new(
+        ldap = @ldap.new(
           host: ldap_host,
           port: ldap_port,
           auth: auth_info

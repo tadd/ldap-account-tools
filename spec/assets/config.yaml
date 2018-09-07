@@ -1,0 +1,18 @@
+general:
+  uid_start: 2000
+  gid_start: 30000
+
+  data_dir: tmp/data
+  cache_dir: tmp/cache
+  lock_dir: tmp/lock
+
+common:
+  mailhost: example.com
+
+ldap:
+  host: localhost
+  port: 389
+  base: dc=example,dc=com
+  root_info:
+    dn: 'cn=admin,dc=example,dc=com'
+    password_file: spec/assets/ldap_password

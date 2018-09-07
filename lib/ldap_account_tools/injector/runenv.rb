@@ -5,131 +5,133 @@ require_relative '../config'
 require_relative '../util/error'
 
 module LdapAccountManage
-  class RunEnv
-    def initialize(config)
-      @superuser_is_readable_user = config['ldap']['root_info']['superuser_is_readable_user']
-      @password_file = config['ldap']['root_info']['password_file']
+  module SubInjector
+    class RunEnv
+      def initialize(config)
+        @superuser_is_readable_user = config['ldap']['root_info']['superuser_is_readable_user']
+        @password_file = config['ldap']['root_info']['password_file']
 
-      can_read_password = check_can_read_password(
-        @password_file,
-        @superuser_is_readable_user
-      )
-      @run_user = get_run_user(
-        config['ldap']['root_info']['uid'],
-        can_read_password,
-        @superuser_is_readable_user
-      )
-    end
-
-    def ldap_password
-      unless run_user[:is_superuser]
-        raise Util::ToolOperationError, 'You are not the administrator.'
+        can_read_password = check_can_read_password(
+          @password_file,
+          @superuser_is_readable_user
+        )
+        @run_user = get_run_user(
+          config['ldap']['root_info']['uid'],
+          can_read_password,
+          @superuser_is_readable_user
+        )
       end
 
-      File.read(@password_file).chomp
-    end
+      def ldap_password
+        unless run_user[:is_superuser]
+          raise Util::ToolOperationError, 'You are not the administrator.'
+        end
 
-    attr_reader :run_user
+        File.read(@password_file).chomp
+      end
 
-    def uid_by_username(username)
-      Etc.getpwnam(username)
-    end
+      attr_reader :run_user
 
-    def userinfo_by_uid(uid)
-      Etc.getpwuid(uid)
-    end
+      def uid_by_username(username)
+        Etc.getpwnam(username)
+      end
 
-    def lang
-      ENV['LANG']
-    end
+      def userinfo_by_uid(uid)
+        Etc.getpwuid(uid)
+      end
 
-    private
+      def lang
+        ENV['LANG']
+      end
 
-    def check_can_read_password(password_file, superuser_is_readable_user)
-      password_stat =
-        begin
-          File.lstat(password_file)
-        rescue Errno::EACCES => err
+      private
+
+      def check_can_read_password(password_file, superuser_is_readable_user)
+        password_stat =
+          begin
+            File.lstat(password_file)
+          rescue Errno::EACCES => err
+            return {
+              status: false,
+              error: err
+            }
+          rescue Errno::ENOENT => err
+            return {
+              status: false,
+              error: err
+            }
+          end
+
+        unless password_stat.readable?
           return {
             status: false,
-            error: err
-          }
-        rescue Errno::ENOENT => err
-          return {
-            status: false,
-            error: err
+            error: Errno::EACCES.new('Cannot read file')
           }
         end
 
-      unless password_stat.readable?
-        return {
-          status: false,
-          error: Errno::EACCES.new('Cannot read file')
+        unless check_password_file_mode(password_stat, superuser_is_readable_user)
+          raise IllegalConfigError, 'password file should not be executable and read by other users'
+        end
+
+        {
+          status: true
         }
       end
 
-      unless check_password_file_mode(password_stat, superuser_is_readable_user)
-        raise IllegalConfigError, 'password file should not be executable and read by other users'
-      end
+      def get_run_user(superuser_list, can_read_password, superuser_is_readable_user)
+        uid = Process::UID.eid
 
-      {
-        status: true
-      }
-    end
+        if superuser_is_readable_user
+          return {
+            is_superuser: can_read_password[:status],
+            uid: uid
+          }
+        end
 
-    def get_run_user(superuser_list, can_read_password, superuser_is_readable_user)
-      uid = Process::UID.eid
+        is_superuser = superuser_list.include?(uid)
 
-      if superuser_is_readable_user
-        return {
-          is_superuser: can_read_password[:status],
+        if is_superuser && !can_read_password[:status]
+          userinfo = userinfo_by_uid(uid)
+          raise IllegalConfigError, format(
+            '%<username>s is a super user, but cannot read password: %<error>s',
+            username: userinfo[:name],
+            error: can_read_password[:error].message
+          )
+        elsif !is_superuser && can_read_password[:status]
+          userinfo = userinfo_by_uid(uid)
+          raise IllegalConfigError, format(
+            '%<username>s is not a super user, but can read password!',
+            username: userinfo[:name]
+          )
+        end
+
+        {
+          is_superuser: is_superuser,
           uid: uid
         }
       end
 
-      is_superuser = superuser_list.include?(uid)
+      def check_password_file_mode(stat, superuser_is_readable_user)
+        mode = stat.mode
 
-      if is_superuser && !can_read_password[:status]
-        userinfo = userinfo_by_uid(uid)
-        raise IllegalConfigError, format(
-          '%<username>s is a super user, but cannot read password: %<error>s',
-          username: userinfo[:name],
-          error: can_read_password[:error].message
-        )
-      elsif !is_superuser && can_read_password[:status]
-        userinfo = userinfo_by_uid(uid)
-        raise IllegalConfigError, format(
-          '%<username>s is not a super user, but can read password!',
-          username: userinfo[:name]
-        )
+        if mode & 0o007 != 0
+          return false
+        end
+
+        if mode & 0o111 != 0
+          return false
+        end
+
+        if superuser_is_readable_user && mode & 0o077 != 0
+          return false
+        end
+
+        if stat.owned? && mode & 0o070 != 0
+          return false
+        end
+
+        true
       end
-
-      {
-        is_superuser: is_superuser,
-        uid: uid
-      }
-    end
-
-    def check_password_file_mode(stat, superuser_is_readable_user)
-      mode = stat.mode
-
-      if mode & 0o007 != 0
-        return false
-      end
-
-      if mode & 0o111 != 0
-        return false
-      end
-
-      if superuser_is_readable_user && mode & 0o077 != 0
-        return false
-      end
-
-      if stat.owned? && mode & 0o070 != 0
-        return false
-      end
-
-      true
     end
   end
 end

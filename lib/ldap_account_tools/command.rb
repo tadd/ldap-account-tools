@@ -10,8 +10,12 @@ module LdapAccountManage
     def initialize(args, opts, config)
       super(args, opts, config)
 
+      if config[:injector_base].nil?
+        config[:injector_base] = Injector
+      end
+
       @config = Config.load(options['config'])
-      @injector = Injector.load(@config)
+      @injector = config[:injector_base].load(@config)
     end
 
     class_option :config, type: :string,

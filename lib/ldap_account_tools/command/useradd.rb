@@ -105,7 +105,44 @@ module LdapAccountManage
       end
     end
 
-    def useradd(username, options, injector, _config)
+    def ask_password(cli, injector, max_count: 3)
+      count = max_count
+      password = nil
+      loop do
+        count -= 1
+        if count < 0
+          raise Util::ToolOperationError, 'Over retry count for password input.'
+        end
+
+        password = cli.ask("\tEnter your password: ") do |q|
+          q.echo = '*'
+        end
+        if password.size <= 11
+          cli.say(cli.color('Too small password! Should be >=12 characters', :red))
+          next
+        end
+
+        check = injector.cracklib.check_password(password)
+        unless check[:is_strong]
+          cli.say(cli.color("Weak password! #{check[:message]}", :red))
+          next
+        end
+
+        repassword = cli.ask("\tConfirm your password: ") do |q|
+          q.echo = '*'
+        end
+        if password != repassword
+          cli.say(cli.color('Password mismatch!', :red))
+          next
+        end
+
+        break
+      end
+
+      password
+    end
+
+    def useradd(username, options, injector, config)
       ldap = injector.ldap.superuserbind_ldap(injector.runenv)
 
       before_useradd(username, options, ldap)
@@ -195,33 +232,7 @@ module LdapAccountManage
         if !options[:password].nil?
           options[:password]
         else
-          loop do
-            password = cli.ask('Enter your password: ') do |q|
-              q.echo = false
-            end
-            if password.size < 12
-              cli.say(cli.color('Too small password! Should be >=12 characters', :red))
-              next
-            end
-
-            check = injector.cracklib.check_password(password)
-            unless check[:is_strong]
-              cli.say(cli.color("Weak password! #{check[:message]}", :red))
-              next
-            end
-
-            repassword = cli.ask('Confirm your password: ') do |q|
-              q.echo = false
-            end
-            if password != repassword
-              cli.say(cli.color('Password mismatch!', :red))
-              next
-            end
-
-            break
-          end
-
-          password
+          ask_password(cli, injector, max_count: config['general']['password_retry'])
         end
 
       after_useradd(username, userdata, ldap, injector, config)
@@ -294,7 +305,7 @@ module LdapAccountManage
             else
               ''
             end
-          mail = cli.ask(ask_message('mail address', mail_default)) do |q|
+          mail = cli.ask(ask_message('mail address', default: mail_default)) do |q|
             q.validate = /(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i
           end
           if mail == ''
@@ -309,7 +320,7 @@ module LdapAccountManage
           options[:lang]
         else
           lang_default = injector.runenv.lang
-          lang = cli.ask(ask_message('preferred language', lang_default))
+          lang = cli.ask(ask_message('preferred language', default: lang_default))
           if lang == ''
             lang_default
           else
@@ -321,7 +332,7 @@ module LdapAccountManage
         if !options[:phonenumber].nil?
           options[:phonenumber]
         else
-          phone = cli.ask('Phone number []: ') do |q|
+          phone = cli.ask(ask_message('phone number', default: '')) do |q|
             q.validate = /^(|\+?[0-9]{6}[0-9]*)$/
           end
           if phone == ''
@@ -335,9 +346,10 @@ module LdapAccountManage
         if !options[:shell].nil?
           options[:shell]
         else
-          shell = cli.ask('Login shell [/bin/bash]: ')
+          shell_default = '/bin/bash'
+          shell = cli.ask(ask_message('login shell', default: shell_default))
           if shell == ''
-            '/bin/bash'
+            shell_default
           else
             shell
           end
@@ -347,40 +359,14 @@ module LdapAccountManage
         if !options[:homedir].nil?
           options[:homedir]
         else
-          format('/home/%<user>s', user: username)
+          "/home/#{username}"
         end
 
       userdata[:password] =
         if !options[:password].nil?
           options[:password]
         else
-          loop do
-            password = cli.ask('Enter your password: ') do |q|
-              q.echo = '*'
-            end
-            if password.size <= 11
-              cli.say(cli.color('Too small password! Should be >=12 characters', :red))
-              next
-            end
-
-            check = injector.cracklib.check_password(password)
-            unless check[:is_strong]
-              cli.say(cli.color("Weak password! #{check[:message]}", :red))
-              next
-            end
-
-            repassword = cli.ask('Confirm your password: ') do |q|
-              q.echo = '*'
-            end
-            if password != repassword
-              cli.say(cli.color('Password mismatch!', :red))
-              next
-            end
-
-            break
-          end
-
-          password
+          ask_password(cli, injector, max_count: config['general']['password_retry'])
         end
 
       after_useradd(username, userdata, ldap, injector, config)
