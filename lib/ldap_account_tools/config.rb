@@ -54,6 +54,7 @@ module LdapAccountManage
             'port' => 389,
             'base' => basename,
             'tls' => 'off',
+            'tls_options' => {},
             'root_info' => {
               'uid' => [0],
               'superuser_is_readable_user' => false,

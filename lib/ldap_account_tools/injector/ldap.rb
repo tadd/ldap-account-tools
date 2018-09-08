@@ -245,11 +245,8 @@ module LdapAccountManage
           end
 
         tls_options = OpenSSL::SSL::SSLContext::DEFAULT_PARAMS
-        unless config['ldap']['ca_file'].nil?
-          tls_options.ca_file = config['ldap']['ca_file']
-        end
-        unless config['ldap']['ssl_version'].nil?
-          tls_options.ssl_version = config['ldap']['ssl_version']
+        config['ldap']['tls_options'].each do |k, v|
+          tls_options[k.to_sym] = v
         end
 
         @ldap_host = config['ldap']['host']
