@@ -14,6 +14,7 @@ SimpleCov.start do
   add_filter '/features/'
 
   add_group 'Command', 'lib/ldap_account_tools/command'
+  add_group 'Injector', 'lib/ldap_account_tools/injector'
   add_group 'Util', 'lib/ldap_account_tools/util'
 end
 
