@@ -25,10 +25,11 @@ module LdapAccountManageSpec
   end
 
   class LdapInstanceMock
-    def initialize(host:, port:, auth:)
+    def initialize(host:, port:, auth:, encryption:)
       @host = host
       @port = port
       @auth = auth
+      @encryption = encryption
     end
 
     def search(base:, filter:, attributes:)

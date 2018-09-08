@@ -11,8 +11,8 @@ module LdapAccountManage
 
     GROUPADD_LOCKFILE = 'groupadd.lock'
 
-    def _groupadd(groupname, groupdata, injector)
-      injector.ldap.groupadd(
+    def _groupadd(groupname, groupdata, ldap)
+      ldap.groupadd(
         objectClass: %w[
           posixGroup
         ],
@@ -35,18 +35,20 @@ module LdapAccountManage
       end
     end
 
-    def after_groupadd(groupname, groupdata, injector, config)
+    def after_groupadd(groupname, groupdata, ldap, config)
       Util.lockfile(config, GROUPADD_LOCKFILE) do
         if groupdata[:gidnumber].nil?
-          groupdata[:gidnumber] = injector.ldap.next_gidnumber.to_s
+          groupdata[:gidnumber] = ldap.next_gidnumber.to_s
         end
 
-        _groupadd(groupname, groupdata, injector)
+        _groupadd(groupname, groupdata, ldap)
       end
     end
 
     def groupadd(groupname, options, injector, config)
-      before_groupadd(groupname, options, injector.ldap)
+      ldap = injector.ldap.superuserbind_ldap(injector.runenv)
+
+      before_groupadd(groupname, options, ldap)
 
       cli = HighLine.new
 
@@ -63,13 +65,15 @@ module LdapAccountManage
           'No description.'
         end
 
-      after_groupadd(groupname, groupdata, injector, config)
+      after_groupadd(groupname, groupdata, ldap, config)
 
       cli.say(cli.color('Success to create a group', :green) + ': ' + cli.color(groupname, :blue))
     end
 
     def interactive_groupadd(groupname, options, injector, config)
-      before_groupadd(groupname, options, injector.ldap)
+      ldap = injector.ldap.superuserbind_ldap(injector.runenv)
+
+      before_groupadd(groupname, options, ldap)
 
       cli = HighLine.new
 
@@ -86,7 +90,7 @@ module LdapAccountManage
           'No description.'
         end
 
-      after_groupadd(groupname, groupdata, injector, config)
+      after_groupadd(groupname, groupdata, ldap, config)
 
       cli.say(cli.color('Success to create a group', :green) + ': ' + cli.color(groupname, :blue))
     end
