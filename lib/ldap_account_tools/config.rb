@@ -53,6 +53,7 @@ module LdapAccountManage
             'host' => 'localhost',
             'port' => 389,
             'base' => basename,
+            'tls' => 'off',
             'root_info' => {
               'uid' => [0],
               'superuser_is_readable_user' => false,

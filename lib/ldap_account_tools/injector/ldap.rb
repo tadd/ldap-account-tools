@@ -244,8 +244,30 @@ module LdapAccountManage
             'ou=group,' + config['ldap']['base']
           end
 
+        tls_options = OpenSSL::SSL::SSLContext::DEFAULT_PARAMS
+        unless config['ldap']['ca_file'].nil?
+          tls_options.ca_file = config['ldap']['ca_file']
+        end
+        unless config['ldap']['ssl_version'].nil?
+          tls_options.ssl_version = config['ldap']['ssl_version']
+        end
+
         @ldap_host = config['ldap']['host']
         @ldap_port = config['ldap']['port']
+        @ldap_encryption =
+          case config['ldap']['tls']
+          when 'off' then nil
+          when 'on' then
+            {
+              method: :simple_tls,
+              tls_options: tls_options
+            }
+          when 'start_tls' then
+            {
+              method: :start_tls,
+              tls_options: tls_options
+            }
+          end
 
         @superuser_auth_info = config['ldap']['root_info']
         @user_auth_info = config['ldap']['user_info']
@@ -253,6 +275,7 @@ module LdapAccountManage
 
       attr_reader :ldap_host
       attr_reader :ldap_port
+      attr_reader :ldap_encryption
 
       def superuserbind_ldap(runenv_injector)
         auth_method = @superuser_auth_info['auth_method']
@@ -274,7 +297,8 @@ module LdapAccountManage
         ldap = @ldap.new(
           host: ldap_host,
           port: ldap_port,
-          auth: auth_info
+          auth: auth_info,
+          encryption: ldap_encryption
         )
 
         LdapInstanceWrapper.new(
