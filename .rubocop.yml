@@ -5,6 +5,7 @@ AllCops:
   Exclude:
     - .bundle/**/*
     - bin/**/*
+    - coverage/**/*
     - vendor/**/*
 
 Bundler/OrderedGems:

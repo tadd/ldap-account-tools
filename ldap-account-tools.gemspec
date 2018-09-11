@@ -12,6 +12,7 @@ Gem::Specification.new do |spec|
   spec.license = 'MIT'
 
   spec.authors = 'mizunashi-mana'
+  spec.email = 'mizunashi-mana@noreply.git'
 
   spec.summary = 'This tools provide some features for LDAP account management'
   spec.description = <<~DESCRIPTION
@@ -21,16 +22,16 @@ Gem::Specification.new do |spec|
 
   spec.platform = Gem::Platform::RUBY
 
-  spec.add_dependency('highline')
-  spec.add_dependency('lockfile')
-  spec.add_dependency('mail')
-  spec.add_dependency('net-ldap')
-  spec.add_dependency('thor')
+  spec.add_dependency('highline', '~> 2.0')
+  spec.add_dependency('lockfile', '~> 2.1')
+  spec.add_dependency('mail', '~> 2.7')
+  spec.add_dependency('net-ldap', '~> 0.16')
+  spec.add_dependency('thor', '~> 0.20')
 
-  spec.add_development_dependency('bundler')
-  spec.add_development_dependency('pry')
-  spec.add_development_dependency('rake')
-  spec.add_development_dependency('rubocop')
+  spec.add_development_dependency('bundler', '~> 1.16')
+  spec.add_development_dependency('pry', '~> 0.11')
+  spec.add_development_dependency('rake', '~> 12.3')
+  spec.add_development_dependency('rubocop', '~> 0.58')
 
   spec.files = `git ls-files -z`.split("\x0")
   spec.test_files = `git ls-files -z -- {test,spec,features}/*`.split("\x0")

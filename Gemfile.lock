@@ -2,11 +2,11 @@ PATH
   remote: .
   specs:
     ldap-account-tools (0.1.0)
-      highline
-      lockfile
-      mail
-      net-ldap
-      thor
+      highline (~> 2.0)
+      lockfile (~> 2.1)
+      mail (~> 2.7)
+      net-ldap (~> 0.16)
+      thor (~> 0.20)
 
 GEM
   remote: https://rubygems.org/
@@ -70,12 +70,12 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler
+  bundler (~> 1.16)
   ldap-account-tools!
-  pry
-  rake
+  pry (~> 0.11)
+  rake (~> 12.3)
   rspec
-  rubocop
+  rubocop (~> 0.58)
   rubylibcrack
   simplecov
 
