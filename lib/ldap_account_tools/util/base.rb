@@ -12,10 +12,10 @@ module LdapAccountManage
       'localhost'
     end
 
-    def deep_merge_hash(base, ext, oldbase = true)
+    def deep_merge_hash(base, ext, oldbase: true)
       base.merge(ext) do |_k, oldv, newv|
         if oldv.is_a?(Hash) && newv.is_a?(Hash)
-          deep_merge_hash(oldv, newv, oldbase)
+          deep_merge_hash(oldv, newv, oldbase: oldbase)
         elsif oldbase
           oldv
         else

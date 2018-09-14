@@ -24,7 +24,7 @@ module LdapAccountManage
     end
 
     def before_groupadd(groupname, groupdata, ldap)
-      if ldap.group_exists?(groupname)
+      if ldap.group_exists_by_name?(groupname)
         raise Util::ToolOperationError, "already group exists: #{groupname}"
       end
 
@@ -65,6 +65,13 @@ module LdapAccountManage
           'No description.'
         end
 
+      groupdata[:memberUid] =
+        if !options[:member].nil?
+          options[:member]
+        else
+          []
+        end
+
       after_groupadd(groupname, groupdata, ldap, config)
 
       cli.say(cli.color('Success to create a group', :green) + ': ' + cli.color(groupname, :blue))
@@ -90,6 +97,13 @@ module LdapAccountManage
           'No description.'
         end
 
+      groupdata[:memberUid] =
+        if !options[:member].nil?
+          options[:member]
+        else
+          []
+        end
+
       after_groupadd(groupname, groupdata, ldap, config)
 
       cli.say(cli.color('Success to create a group', :green) + ': ' + cli.color(groupname, :blue))
@@ -104,9 +118,9 @@ module LdapAccountManage
     method_option :desc, type: :string,
       banner: 'TEXT',
       desc: 'Description'
-    method_option :member, type: :string,
-      banner: 'UID,UID,...',
-      desc: 'Member UIDs'
+    method_option :member, type: :array,
+      banner: 'UID',
+      desc: 'Member UIDs (can multiply)'
     def groupadd(groupname)
       if options[:interactive]
         GroupAdd.interactive_groupadd(groupname, options, @injector, @config)

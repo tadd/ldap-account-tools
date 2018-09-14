@@ -7,3 +7,10 @@ See [Installation Document](doc/Installation.md).
 ## Usage
 
 See `ldap-account help`.
+
+## Test
+
+```bash
+bundle exec rake
+docker-compose up --build --force-recreate --exit-code-from testspace
+```

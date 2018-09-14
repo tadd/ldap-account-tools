@@ -41,7 +41,7 @@ module LdapAccountManage
       end
 
       def lang
-        ENV['LANG']
+        ENV['LANG'] || 'en_US'
       end
 
       private

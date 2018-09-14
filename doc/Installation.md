@@ -19,9 +19,11 @@
 
     ```bash
     sudo mkdir -p \
-      /etc/ldap-account-tools \
+      /etc/ldap-account-tools/private \
       /var/lib/ldap-account-tools/{data,cache} \
       /var/lock/ldap-account-tools
+    sudo touch /etc/ldap-account-tools/private/ldap_password
+    sudo chmod 0400 /etc/ldap-account-tools/private/ldap_password
     ```
 
 4. Create custom proxy script:
@@ -38,5 +40,5 @@
 5. Place config
 
     ```bash
-    ldap-account config | sudo tee /etc/ldap-account-tools/config.yaml
+    sudo ldap-account config --output /etc/ldap-account-tools/config.yaml
     ```
