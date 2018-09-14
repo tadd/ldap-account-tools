@@ -1,0 +1,8 @@
+version: '3'
+services:
+  testspace:
+    build:
+      context: .
+      dockerfile: docker/testspace.Dockerfile
+    volumes:
+      - .:/root/ldap-account-tools

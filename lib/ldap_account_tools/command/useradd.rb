@@ -13,7 +13,7 @@ module LdapAccountManage
 
     def _useradd(username, userdata, ldap, injector)
       password_hash = '{CRYPT}' + injector.cracklib.crypt_hash(userdata[:password])
-      gecos = userdata[:displayname] + ',' + userdata[:description]
+      gecos = userdata[:displayname] + ',,,,' + userdata[:description]
 
       ldap.useradd(
         objectClass: %w[
@@ -49,7 +49,7 @@ module LdapAccountManage
       )
     end
 
-    def before_useradd(username, userdata, ldap)
+    def before_useradd(username, userdata, ldap, injector)
       if ldap.user_exists_by_name?(username)
         raise Util::ToolOperationError, "already user exists: #{username}"
       end
@@ -145,7 +145,7 @@ module LdapAccountManage
     def useradd(username, options, injector, config)
       ldap = injector.ldap.superuserbind_ldap(injector.runenv)
 
-      before_useradd(username, options, ldap)
+      before_useradd(username, options, ldap, injector)
 
       cli = HighLine.new
 
@@ -252,7 +252,7 @@ module LdapAccountManage
     def interactive_useradd(username, options, injector, config)
       ldap = injector.ldap.superuserbind_ldap(injector.runenv)
 
-      before_useradd(username, options, ldap)
+      before_useradd(username, options, ldap, injector)
 
       userdata = {}
       cli = HighLine.new

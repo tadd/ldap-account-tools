@@ -16,8 +16,23 @@ module LdapAccountManage
         "#{result.message}: #{result.error_message}"
       end
 
-      def add(options)
-        result = @ldap.add(options)
+      def normalized_attributes(attrs)
+        result = {}
+
+        attrs.each do |k, v|
+          unless v.is_a?(Array) && v.empty?
+            result[k] = v
+          end
+        end
+
+        result
+      end
+
+      def add(dn:, attributes:)
+        result = @ldap.add(
+          dn: dn,
+          attributes: normalized_attributes(attributes)
+        )
         if result
           {
             status: true,
@@ -31,8 +46,11 @@ module LdapAccountManage
         end
       end
 
-      def modify(options)
-        result = @ldap.modify(options)
+      def modify(dn:, attributes:)
+        result = @ldap.modify(
+          dn: dn,
+          attributes: normalized_attributes(attributes)
+        )
         if result
           {
             status: true,
@@ -211,6 +229,7 @@ module LdapAccountManage
 
       def groupadd(attrs)
         from_result do
+          p attrs
           @ldap.add(
             dn: "cn=#{attrs[:cn]},#{groupbase}",
             attributes: attrs
