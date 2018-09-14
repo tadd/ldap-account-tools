@@ -229,7 +229,6 @@ module LdapAccountManage
 
       def groupadd(attrs)
         from_result do
-          p attrs
           @ldap.add(
             dn: "cn=#{attrs[:cn]},#{groupbase}",
             attributes: attrs
