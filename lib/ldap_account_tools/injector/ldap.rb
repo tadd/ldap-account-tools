@@ -46,10 +46,9 @@ module LdapAccountManage
         end
       end
 
-      def modify(dn:, attributes:)
-        result = @ldap.modify(
-          dn: dn,
-          attributes: normalized_attributes(attributes)
+      def delete(dn:)
+        result = @ldap.delete(
+          dn: dn
         )
         if result
           {
@@ -64,8 +63,52 @@ module LdapAccountManage
         end
       end
 
-      def search(options, &block)
-        result = @ldap.search(options, &block)
+      def normalized_operators(operators)
+        result = []
+
+        operators.each do |operator_type, operator_vals|
+          if operator_vals.is_a?(Array)
+            operator_vals.each do |operator_val|
+              result.push([operator_type, operator_val, nil])
+            end
+          else
+            operator_vals.each do |operator_key, operator_val|
+              result.push([operator_type, operator_key, operator_val])
+            end
+          end
+        end
+
+        p result
+
+        result
+      end
+
+      def modify(dn:, operators:)
+        p dn, operators
+        result = @ldap.modify(
+          dn: dn,
+          operators: normalized_operators(operators)
+        )
+        if result
+          {
+            status: true,
+            content: result
+          }
+        else
+          {
+            status: false,
+            message: error_report_by_result(@ldap.get_operation_result)
+          }
+        end
+      end
+
+      def search(base:, filter:, attributes:, &block)
+        result = @ldap.search(
+          base: base,
+          filter: filter,
+          attributes: attributes,
+          &block
+        )
         if result
           {
             status: true,
@@ -234,6 +277,50 @@ module LdapAccountManage
             attributes: attrs
           )
         end
+      end
+
+      def userdel(name)
+        from_result do
+          @ldap.delete(
+            dn: "cn=#{name},#{userbase}"
+          )
+        end
+      end
+
+      def groupdel(name)
+        from_result do
+          @ldap.delete(
+            dn: "cn=#{name},#{groupbase}"
+          )
+        end
+      end
+
+      def groups_from_member(username, &block)
+        group_search(
+          filter: Net::LDAP::Filter.eq('memberUid', username),
+          attributes: %w[
+            cn
+            gidNumber
+            memberUid
+          ],
+          &block
+        )
+      end
+
+      def groupmod(name, operators)
+        from_result do
+          @ldap.modify(
+            dn: "cn=#{name},#{groupbase}",
+            operators: operators
+          )
+        end
+      end
+
+      def delmember_from_group(groupname, username)
+        groupmod(
+          groupname,
+          replace: { memberuid: [] }
+        )
       end
     end
 

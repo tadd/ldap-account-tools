@@ -20,10 +20,12 @@ module LdapAccountManage
       @runenv = RunEnv.new(conf)
       @ldap = LdapAccount.new(conf)
       @cracklib = CrackLib.new(conf)
+      @lock = Lock.new(conf)
     end
 
     attr_reader :ldap
     attr_reader :cracklib
     attr_reader :runenv
+    attr_reader :lock
   end
 end

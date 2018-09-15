@@ -32,7 +32,7 @@
     $ sudo sh -c 'cat > /usr/local/bin/ldap-account'
     #!/bin/sh
 
-    exec /opt/ldap-account-tools/bin/ldap-account $*
+    exec /opt/ldap-account-tools/bin/ldap-account $@
     $ sudo chmod +x /usr/local/bin/ldap-account
     $ ldap-account help # for checking
     ```

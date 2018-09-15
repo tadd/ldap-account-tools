@@ -2,14 +2,11 @@
 
 require 'highline'
 require 'thor'
-require_relative '../util/lock'
 require_relative '../util/error'
 
 module LdapAccountManage
   module GroupAdd
     module_function
-
-    GROUPADD_LOCKFILE = 'groupadd.lock'
 
     def _groupadd(groupname, groupdata, ldap)
       ldap.groupadd(
@@ -35,8 +32,8 @@ module LdapAccountManage
       end
     end
 
-    def after_groupadd(groupname, groupdata, ldap, config)
-      Util.lockfile(config, GROUPADD_LOCKFILE) do
+    def after_groupadd(groupname, groupdata, ldap, injector)
+      injector.lock.account_modify_lock do
         if groupdata[:gidnumber].nil?
           groupdata[:gidnumber] = ldap.next_gidnumber.to_s
         end
@@ -45,7 +42,7 @@ module LdapAccountManage
       end
     end
 
-    def groupadd(groupname, options, injector, config)
+    def groupadd(groupname, options, injector, _config)
       ldap = injector.ldap.superuserbind_ldap(injector.runenv)
 
       before_groupadd(groupname, options, ldap)
@@ -72,12 +69,12 @@ module LdapAccountManage
           []
         end
 
-      after_groupadd(groupname, groupdata, ldap, config)
+      after_groupadd(groupname, groupdata, ldap, injector)
 
       cli.say(cli.color('Success to create a group', :green) + ': ' + cli.color(groupname, :blue))
     end
 
-    def interactive_groupadd(groupname, options, injector, config)
+    def interactive_groupadd(groupname, options, injector, _config)
       ldap = injector.ldap.superuserbind_ldap(injector.runenv)
 
       before_groupadd(groupname, options, ldap)
@@ -104,14 +101,14 @@ module LdapAccountManage
           []
         end
 
-      after_groupadd(groupname, groupdata, ldap, config)
+      after_groupadd(groupname, groupdata, ldap, injector)
 
       cli.say(cli.color('Success to create a group', :green) + ': ' + cli.color(groupname, :blue))
     end
   end
 
   class Command
-    desc 'groupadd [options] GROUP', 'add a group to LDAP'
+    desc 'groupadd [options] GROUP [--member USER ...]', 'add a group to LDAP'
     method_option :gidnumber, type: :string,
       banner: 'NUM',
       desc: 'GID'
@@ -119,8 +116,8 @@ module LdapAccountManage
       banner: 'TEXT',
       desc: 'Description'
     method_option :member, type: :array,
-      banner: 'UID',
-      desc: 'Member UIDs (can multiply)'
+      banner: 'USER ...',
+      desc: 'Member users (can multiply)'
     def groupadd(groupname)
       if options[:interactive]
         GroupAdd.interactive_groupadd(groupname, options, @injector, @config)

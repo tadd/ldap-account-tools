@@ -12,5 +12,5 @@ See `ldap-account help`.
 
 ```bash
 bundle exec rake
-docker-compose up --build --force-recreate --exit-code-from testspace
+docker-compose up --build --force-recreate --abort-on-container-exit
 ```

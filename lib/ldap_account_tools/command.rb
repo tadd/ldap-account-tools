@@ -21,6 +21,10 @@ module LdapAccountManage
     class_option :config, type: :string,
       banner: 'CONFIG', aliases: [:c],
       desc: 'use as global configuration'
+
+    def self.exit_on_failure?
+      true
+    end
   end
 end
 

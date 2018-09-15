@@ -16,9 +16,36 @@ bundle binstub ldap-account-tools
 
 ldap-account help
 
+# create users
+
 ldap-account useradd --no-interactive \
-  --password='Very-strength.passW0rd' \
-  --familyname='test' --givenname='user' \
+  --password 'Very-strength.passW0rd' \
+  --familyname 'test' --givenname 'user' \
   testuser
 
+ldap-account useradd --no-interactive \
+  --password 'Very-strength.passW0rd' \
+  --familyname 'test_has_info' --givenname 'user' \
+  --mail 'testuser_has_info@example.com' \
+  --desc 'Test user has some info' \
+  testuser_has_info
+
+
+# create groups
+
 ldap-account groupadd testgroup
+
+ldap-account groupadd \
+  testgroup_has_users \
+  --desc 'Test group has some members' \
+  --member testuser testuser_has_info
+
+
+# delete users
+ldap-account userdel testuser
+
+
+# test show
+slapcat
+
+exec tail -f /var/log/faillog
