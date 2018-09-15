@@ -63,31 +63,28 @@ module LdapAccountManage
         end
       end
 
-      def normalized_operators(operators)
+      def normalized_operations(operations)
         result = []
 
-        operators.each do |operator_type, operator_vals|
-          if operator_vals.is_a?(Array)
-            operator_vals.each do |operator_val|
-              result.push([operator_type, operator_val, nil])
+        operations.each do |operation_type, operation_vals|
+          if operation_vals.is_a?(Array)
+            operation_vals.each do |operation_val|
+              result.push([operation_type, operation_val, nil])
             end
           else
-            operator_vals.each do |operator_key, operator_val|
-              result.push([operator_type, operator_key, operator_val])
+            operation_vals.each do |operation_key, operation_val|
+              result.push([operation_type, operation_key, operation_val])
             end
           end
         end
 
-        p result
-
         result
       end
 
-      def modify(dn:, operators:)
-        p dn, operators
+      def modify(dn:, operations:)
         result = @ldap.modify(
           dn: dn,
-          operators: normalized_operators(operators)
+          operations: normalized_operations(operations)
         )
         if result
           {
@@ -307,19 +304,36 @@ module LdapAccountManage
         )
       end
 
-      def groupmod(name, operators)
+      def groupmod(name, operations)
         from_result do
           @ldap.modify(
             dn: "cn=#{name},#{groupbase}",
-            operators: operators
+            operations: operations
           )
         end
       end
 
       def delmember_from_group(groupname, username)
+        member_uid = []
+        group_search(
+          filter: Net::LDAP::Filter.eq('cn', groupname),
+          attributes: %w[
+            cn
+            memberUid
+          ]
+        ) do |entry|
+          entry.memberuid.each do |uid|
+            unless uid == username
+              member_uid.push(uid)
+            end
+          end
+        end
+
         groupmod(
           groupname,
-          replace: { memberuid: [] }
+          replace: {
+            memberUid: member_uid
+          }
         )
       end
     end
@@ -340,13 +354,13 @@ module LdapAccountManage
           if !config['ldap']['userbase'].nil?
             config['ldap']['userbase']
           else
-            'ou=people,' + config['ldap']['base']
+            "ou=people,#{config['ldap']['base']}"
           end
         @groupbase =
           if !config['ldap']['groupbase'].nil?
             config['ldap']['groupbase']
           else
-            'ou=group,' + config['ldap']['base']
+            "ou=group,#{config['ldap']['base']}"
           end
 
         tls_options = OpenSSL::SSL::SSLContext::DEFAULT_PARAMS

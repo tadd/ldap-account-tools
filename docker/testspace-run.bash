@@ -4,12 +4,18 @@ set -x
 set -euo pipefail
 shopt -s nullglob
 
-INSTALL_DIR="/root/ldap-account-tools"
+PREINSTALL_DIR="/root/ldap-account-tools"
+INSTALL_DIR="/opt/ldap-account-tools"
 
-git clone $INSTALL_DIR/.git /opt/ldap-account-tools
-cd /opt/ldap-account-tools
+mkdir -p $INSTALL_DIR
+git clone $PREINSTALL_DIR/.git $INSTALL_DIR
+git -C $PREINSTALL_DIR ls-files \
+  | xargs -I{} cp $PREINSTALL_DIR/{} $INSTALL_DIR/{}
+cd $INSTALL_DIR
 
-bundle install --deployment --without development test
+cp -r ${BUNDLE_CACHE_DIR}/vendor vendor
+
+bundle install --local --deployment --without development test
 bundle binstub ldap-account-tools
 
 /etc/init.d/slapd start
@@ -45,7 +51,9 @@ ldap-account groupadd \
 ldap-account userdel testuser
 
 
+# delete groups
+ldap-account groupdel testgroup
+
+
 # test show
 slapcat
-
-exec tail -f /var/log/faillog

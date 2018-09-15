@@ -15,7 +15,7 @@
 
 # for develop
 /config.yaml
-/tmp
+/tmp/
 
 # for Ruby
 .bundle/
