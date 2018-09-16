@@ -3,6 +3,7 @@
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'ldap_account_tools/version'
+require 'ldap_account_tools/util/base'
 
 Gem::Specification.new do |spec|
   spec.name = 'ldap-account-tools'
@@ -33,10 +34,19 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency('rake', '~> 12.3')
   spec.add_development_dependency('rubocop', '~> 0.58')
 
-  spec.files = `git ls-files -z`.split("\x0")
-  spec.test_files = `git ls-files -z -- {test,spec,features}/*`.split("\x0")
   spec.bindir = 'exe'
-  spec.executables = `git ls-files -z -- exe/*`
-    .split("\x0").map { |f| File.basename(f) }
   spec.require_paths = ['lib']
+  spec.files =
+    begin
+      `git ls-files -z`.split("\x0")
+    rescue Errno::ENOENT
+      STDERR.puts 'Use fallback find files, since not found git repository'
+      LdapAccountManage::Util.filelist('.')
+        .reject { |f| f =~ /^(\.bundle|vendor|coverage|bin)/ }
+    end
+  spec.test_files = spec.files
+    .select { |f| f =~ /^(test|features|spec)/ }
+  spec.executables = spec.files
+    .select { |f| f =~ /^(#{spec.bindir})/ }
+    .map { |f| File.basename(f) }
 end

@@ -46,10 +46,9 @@ module LdapAccountManage
         end
       end
 
-      def modify(dn:, attributes:)
-        result = @ldap.modify(
-          dn: dn,
-          attributes: normalized_attributes(attributes)
+      def delete(dn:)
+        result = @ldap.delete(
+          dn: dn
         )
         if result
           {
@@ -64,8 +63,49 @@ module LdapAccountManage
         end
       end
 
-      def search(options, &block)
-        result = @ldap.search(options, &block)
+      def normalized_operations(operations)
+        result = []
+
+        operations.each do |operation_type, operation_vals|
+          if operation_vals.is_a?(Array)
+            operation_vals.each do |operation_val|
+              result.push([operation_type, operation_val, nil])
+            end
+          else
+            operation_vals.each do |operation_key, operation_val|
+              result.push([operation_type, operation_key, operation_val])
+            end
+          end
+        end
+
+        result
+      end
+
+      def modify(dn:, operations:)
+        result = @ldap.modify(
+          dn: dn,
+          operations: normalized_operations(operations)
+        )
+        if result
+          {
+            status: true,
+            content: result
+          }
+        else
+          {
+            status: false,
+            message: error_report_by_result(@ldap.get_operation_result)
+          }
+        end
+      end
+
+      def search(base:, filter:, attributes:, &block)
+        result = @ldap.search(
+          base: base,
+          filter: filter,
+          attributes: attributes,
+          &block
+        )
         if result
           {
             status: true,
@@ -235,6 +275,61 @@ module LdapAccountManage
           )
         end
       end
+
+      def userdel(name)
+        from_result do
+          @ldap.delete(
+            dn: "cn=#{name},#{userbase}"
+          )
+        end
+      end
+
+      def groupdel(name)
+        from_result do
+          @ldap.delete(
+            dn: "cn=#{name},#{groupbase}"
+          )
+        end
+      end
+
+      def groups_from_member(username, &block)
+        group_search(
+          filter: Net::LDAP::Filter.eq('memberUid', username),
+          attributes: %w[
+            cn
+            gidNumber
+            memberUid
+          ],
+          &block
+        )
+      end
+
+      def groupmod(name, operations)
+        from_result do
+          @ldap.modify(
+            dn: "cn=#{name},#{groupbase}",
+            operations: operations
+          )
+        end
+      end
+
+      def member_in_group(groupname)
+        entries = group_search(
+          filter: Net::LDAP::Filter.eq('cn', groupname),
+          attributes: %w[
+            cn
+            memberUid
+          ]
+        )
+
+        if entries.empty?
+          raise LdapError, "No such a group: #{groupname}"
+        elsif entries[0].attribute_names.member?(:memberuid)
+          entries[0].memberuid
+        else
+          []
+        end
+      end
     end
 
     class LdapAccount
@@ -253,13 +348,13 @@ module LdapAccountManage
           if !config['ldap']['userbase'].nil?
             config['ldap']['userbase']
           else
-            'ou=people,' + config['ldap']['base']
+            "ou=people,#{config['ldap']['base']}"
           end
         @groupbase =
           if !config['ldap']['groupbase'].nil?
             config['ldap']['groupbase']
           else
-            'ou=group,' + config['ldap']['base']
+            "ou=group,#{config['ldap']['base']}"
           end
 
         tls_options = OpenSSL::SSL::SSLContext::DEFAULT_PARAMS

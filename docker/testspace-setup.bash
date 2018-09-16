@@ -14,7 +14,7 @@ mkdir -p \
 cat > /usr/local/bin/ldap-account <<EOS
 #!/bin/sh
 
-exec /opt/ldap-account-tools/bin/ldap-account \$*
+exec /opt/ldap-account-tools/bin/ldap-account "\$@"
 EOS
 chmod +x /usr/local/bin/ldap-account
 

@@ -23,5 +23,20 @@ module LdapAccountManage
         end
       end
     end
+
+    def filelist(dir, is_rec: true)
+      result = []
+
+      Dir.each_child(dir) do |f|
+        path = File.join(dir, f)
+        if File.file?(path)
+          result.push(path)
+        elsif is_rec && Dir.dir?(path)
+          result += filelist(path, is_rec: is_rec)
+        end
+      end
+
+      result
+    end
   end
 end

@@ -2,14 +2,11 @@
 
 require 'thor'
 require 'highline'
-require_relative '../util/lock'
 require_relative '../util/error'
 
 module LdapAccountManage
   module UserAdd
     module_function
-
-    USERADD_LOCKFILE = 'useradd.lock'
 
     def _useradd(username, userdata, ldap, injector)
       password_hash = '{CRYPT}' + injector.cracklib.crypt_hash(userdata[:password])
@@ -92,8 +89,8 @@ module LdapAccountManage
       end
     end
 
-    def after_useradd(username, userdata, ldap, injector, config)
-      Util.lockfile(config, USERADD_LOCKFILE) do
+    def after_useradd(username, userdata, ldap, injector)
+      injector.lock.account_modify_lock do
         if userdata[:uidnumber].nil?
           userdata[:uidnumber] = ldap.next_uidnumber.to_s
         end
@@ -114,7 +111,7 @@ module LdapAccountManage
           raise Util::ToolOperationError, 'Over retry count for password input.'
         end
 
-        password = cli.ask("\tEnter your password: ") do |q|
+        password = cli.ask('Enter your password: ') do |q|
           q.echo = '*'
         end
         if password.size <= 11
@@ -128,7 +125,7 @@ module LdapAccountManage
           next
         end
 
-        repassword = cli.ask("\tRetype the password: ") do |q|
+        repassword = cli.ask('Retype the password: ') do |q|
           q.echo = '*'
         end
         if password != repassword
@@ -235,17 +232,17 @@ module LdapAccountManage
           ask_password(cli, injector, max_count: config['general']['password_retry'])
         end
 
-      after_useradd(username, userdata, ldap, injector, config)
+      after_useradd(username, userdata, ldap, injector)
 
-      cli.say(cli.color('Success to create your account.', :green))
+      cli.say(cli.color('Success to create an account', :green) + ': ' + cli.color(username, :blue))
     end
 
     def ask_message(name, default: nil)
       cap_name = name.capitalize
       if default.nil?
-        "\t#{cap_name}: "
+        "#{cap_name}: "
       else
-        "\t#{cap_name} [#{default}]: "
+        "#{cap_name} [#{default}]: "
       end
     end
 
@@ -259,18 +256,26 @@ module LdapAccountManage
 
       cli.say('Input user information:')
 
+      cli.indent_level = 1
+
       userdata[:familyname] =
         if !options[:familyname].nil?
           options[:familyname]
         else
-          cli.ask(ask_message('family name')).downcase
+          cli.ask(ask_message('family name')) do |q|
+            q.validate = /.+/
+          end
+            .downcase
         end
 
       userdata[:givenname] =
         if !options[:givenname].nil?
           options[:givenname]
         else
-          cli.ask(ask_message('given name')).downcase
+          cli.ask(ask_message('given name')) do |q|
+            q.validate = /.+/
+          end
+            .downcase
         end
 
       userdata[:displayname] =
@@ -369,7 +374,9 @@ module LdapAccountManage
           ask_password(cli, injector, max_count: config['general']['password_retry'])
         end
 
-      after_useradd(username, userdata, ldap, injector, config)
+      after_useradd(username, userdata, ldap, injector)
+
+      cli.indent_level = 0
 
       cli.say(cli.color('Success to create a user', :green) + ': ' + cli.color(username, :blue))
     end
