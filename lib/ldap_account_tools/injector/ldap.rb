@@ -313,28 +313,22 @@ module LdapAccountManage
         end
       end
 
-      def delmember_from_group(groupname, username)
-        member_uid = []
-        group_search(
+      def member_in_group(groupname)
+        entries = group_search(
           filter: Net::LDAP::Filter.eq('cn', groupname),
           attributes: %w[
             cn
             memberUid
           ]
-        ) do |entry|
-          entry.memberuid.each do |uid|
-            unless uid == username
-              member_uid.push(uid)
-            end
-          end
-        end
-
-        groupmod(
-          groupname,
-          replace: {
-            memberUid: member_uid
-          }
         )
+
+        if entries.empty?
+          raise LdapError, "No such a group: #{groupname}"
+        elsif entries[0].attribute_names.member?(:memberuid)
+          entries[0].memberuid
+        else
+          []
+        end
       end
     end
 

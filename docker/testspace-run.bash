@@ -36,10 +36,24 @@ ldap-account useradd --no-interactive \
   --desc 'Test user has some info' \
   testuser_has_info
 
+ldap-account useradd --no-interactive \
+  --password 'Very-strength.passW0rd' \
+  --familyname 'test2' --givenname 'user' \
+  --mail 'testuser2@example.com' \
+  testuser2
+
+ldap-account useradd --no-interactive \
+  --password 'Very-strength.passW0rd' \
+  --familyname 'test3' --givenname 'user' \
+  --mail 'testuser3@example.com' \
+  testuser3
+
 
 # create groups
 
 ldap-account groupadd testgroup
+
+ldap-account groupadd testgroup2
 
 ldap-account groupadd \
   testgroup_has_users \
@@ -53,6 +67,13 @@ ldap-account userdel testuser
 
 # delete groups
 ldap-account groupdel testgroup
+
+
+# modify groups
+ldap-account groupmod --gidnumber 30100 testgroup2 \
+  --member testuser2 testuser_has_info \
+  --append-member testuser3 \
+  --delete-member testuser2 testuser3
 
 
 # test show

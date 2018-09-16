@@ -20,7 +20,17 @@ module LdapAccountManage
         ldap.groupdel(username)
 
         ldap.groups_from_member(username) do |entry|
-          ldap.delmember_from_group(entry.cn[0], username)
+          groupname = entry.cn[0]
+
+          member_uid = ldap.member_in_group(groupname)
+            .reject { |member| member == username }
+
+          ldap.groupmod(
+            groupname,
+            replace: {
+              memberUid: member_uid
+            }
+          )
         end
       end
     end
