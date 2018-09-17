@@ -22,7 +22,7 @@ module LdapAccountManage
 
     def before_groupadd(groupname, groupdata, ldap)
       if ldap.group_exists_by_name?(groupname)
-        raise Util::ToolOperationError, "already group exists: #{groupname}"
+        raise Util::ToolOperationError, "Already group exists: #{groupname}"
       end
 
       unless groupdata[:gidnumber].nil?
@@ -108,7 +108,7 @@ module LdapAccountManage
   end
 
   class Command
-    desc 'groupadd [options] GROUP [--member USER ...]', 'add a group to LDAP'
+    desc 'groupadd GROUP [options]', 'add a group to LDAP'
     method_option :gidnumber, type: :string,
       banner: 'NUM',
       desc: 'GID'

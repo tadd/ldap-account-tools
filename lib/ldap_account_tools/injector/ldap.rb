@@ -4,16 +4,37 @@ require 'net-ldap'
 require_relative '../config'
 
 module LdapAccountManage
-  module SubInjector
-    class LdapError < StandardError; end
+  class LdapError < StandardError
+    def initialize(result)
+      type = result.message
+      detail = result.error_message
+      super("#{type}: #{detail}")
+      @type = type
+      @detail = detail
+    end
 
+    attr_reader :type
+    attr_reader :detail
+  end
+
+  module SubInjector
     class NetLdapWrapper
       def initialize(options)
         @ldap = Net::LDAP.new(options)
       end
 
-      def error_report_by_result(result)
-        "#{result.message}: #{result.error_message}"
+      def from_result(result)
+        if result
+          {
+            status: true,
+            content: result
+          }
+        else
+          {
+            status: false,
+            error: LdapError.new(@ldap.get_operation_result)
+          }
+        end
       end
 
       def normalized_attributes(attrs)
@@ -29,38 +50,20 @@ module LdapAccountManage
       end
 
       def add(dn:, attributes:)
-        result = @ldap.add(
-          dn: dn,
-          attributes: normalized_attributes(attributes)
+        from_result(
+          @ldap.add(
+            dn: dn,
+            attributes: normalized_attributes(attributes)
+          )
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
 
       def delete(dn:)
-        result = @ldap.delete(
-          dn: dn
+        from_result(
+          @ldap.delete(
+            dn: dn
+          )
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
 
       def normalized_operations(operations)
@@ -82,41 +85,23 @@ module LdapAccountManage
       end
 
       def modify(dn:, operations:)
-        result = @ldap.modify(
-          dn: dn,
-          operations: normalized_operations(operations)
+        from_result(
+          @ldap.modify(
+            dn: dn,
+            operations: normalized_operations(operations)
+          )
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
 
       def search(base:, filter:, attributes:, &block)
-        result = @ldap.search(
-          base: base,
-          filter: filter,
-          attributes: attributes,
-          &block
+        from_result(
+          @ldap.search(
+            base: base,
+            filter: filter,
+            attributes: attributes,
+            &block
+          )
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
     end
 
@@ -152,7 +137,7 @@ module LdapAccountManage
         if result[:status]
           result[:content]
         else
-          raise LdapError, result[:message]
+          raise result[:error]
         end
       end
 

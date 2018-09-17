@@ -38,9 +38,12 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
   spec.files =
     begin
+      unless system('git status', out: '/dev/null', err: '/dev/null')
+        raise Errno::ENOENT, 'Not a git repository'
+      end
       `git ls-files -z`.split("\x0")
     rescue Errno::ENOENT
-      STDERR.puts 'Use fallback find files, since not found git repository'
+      STDERR.puts 'Use fallback find files, since not found a git repository'
       LdapAccountManage::Util.filelist('.')
         .reject { |f| f =~ /^(\.bundle|vendor|coverage|bin)/ }
     end

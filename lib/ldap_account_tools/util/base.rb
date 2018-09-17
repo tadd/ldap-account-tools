@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'socket'
+require 'pathname'
 
 module LdapAccountManage
   module Util
@@ -27,11 +28,10 @@ module LdapAccountManage
     def filelist(dir, is_rec: true)
       result = []
 
-      Dir.each_child(dir) do |f|
-        path = File.join(dir, f)
-        if File.file?(path)
-          result.push(path)
-        elsif is_rec && Dir.dir?(path)
+      Pathname.new(dir).each_child do |path|
+        if path.file?
+          result.push(path.to_s)
+        elsif is_rec && path.directory?
           result += filelist(path, is_rec: is_rec)
         end
       end

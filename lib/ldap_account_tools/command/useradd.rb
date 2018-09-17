@@ -3,6 +3,8 @@
 require 'thor'
 require 'highline'
 require_relative '../util/error'
+require_relative '../util/account'
+require_relative '../injector/ldap'
 
 module LdapAccountManage
   module UserAdd
@@ -11,6 +13,10 @@ module LdapAccountManage
     def _useradd(username, userdata, ldap, injector)
       password_hash = '{CRYPT}' + injector.cracklib.crypt_hash(userdata[:password])
       gecos = userdata[:displayname] + ',,,,' + userdata[:description]
+
+      if userdata[:phonenumber] == ''
+        userdata[:phonenumber] = Util.DEFAULT_PHONENUMBER
+      end
 
       ldap.useradd(
         objectClass: %w[
@@ -51,42 +57,10 @@ module LdapAccountManage
         raise Util::ToolOperationError, "already user exists: #{username}"
       end
 
-      unless userdata[:uidnumber].nil?
-        if ldap.user_exists_by_uid?(userdata[:uidnumber])
-          raise Util::ToolOperationError, "UID number #{userdata[:uidnumber]} is already used"
-        end
-      end
-
-      unless userdata[:gidnumber].nil?
-        if ldap.group_exists_by_gid?(userdata[:gidnumber])
-          raise Util::ToolOperationError, "GID number #{userdata[:gidnumber]} is already used"
-        end
-      end
-
-      unless userdata[:familyname].nil?
-        unless /[[:lower:]]/ =~ userdata[:familyname]
-          raise Util::ToolOperationError, 'Family name must be given by lowercase.'
-        end
-      end
-
-      unless userdata[:givenname].nil?
-        unless /[[:lower:]]/ =~ userdata[:givenname]
-          raise Util::ToolOperationError, 'Given name must be given by lowercase.'
-        end
-      end
-
-      unless userdata[:password].nil?
-        password = userdata[:password]
-
-        if password.size < 12
-          raise Util::ToolOperationError, 'Password should have >=12 characters'
-        end
-
-        check = injector.cracklib.check_password(password)
-        unless check[:is_strong]
-          raise Util::ToolOperationError, "Password is weak: #{check[:message]}"
-        end
-      end
+      Util.validate_userdata(
+        userdata,
+        ldap: ldap, injector: injector
+      )
     end
 
     def after_useradd(username, userdata, ldap, injector)
@@ -102,41 +76,24 @@ module LdapAccountManage
       end
     end
 
-    def ask_password(cli, injector, max_count: 3)
-      count = max_count
-      password = nil
-      loop do
-        count -= 1
-        if count < 0
-          raise Util::ToolOperationError, 'Over retry count for password input.'
-        end
+    def get_default_displayname(userdata)
+      format(
+        '%<given>s %<family>s',
+        given: userdata[:givenname].capitalize,
+        family: userdata[:familyname].capitalize
+      )
+    end
 
-        password = cli.ask('Enter your password: ') do |q|
-          q.echo = '*'
-        end
-        if password.size <= 11
-          cli.say(cli.color('Too small password! Should be >=12 characters', :red))
-          next
-        end
-
-        check = injector.cracklib.check_password(password)
-        unless check[:is_strong]
-          cli.say(cli.color("Weak password! #{check[:message]}", :red))
-          next
-        end
-
-        repassword = cli.ask('Retype the password: ') do |q|
-          q.echo = '*'
-        end
-        if password != repassword
-          cli.say(cli.color('Password mismatch!', :red))
-          next
-        end
-
-        break
+    def get_default_mail(username, config)
+      if !config['common']['mailhost'].nil?
+        format(
+          '%<user>s@%<host>s',
+          user: username,
+          host: config['common']['mailhost']
+        )
+      else
+        ''
       end
-
-      password
     end
 
     def useradd(username, options, injector, config)
@@ -170,11 +127,7 @@ module LdapAccountManage
         if !options[:displayname].nil?
           options[:displayname]
         else
-          format(
-            '%<given>s %<family>s',
-            given: userdata[:givenname].capitalize,
-            family: userdata[:familyname].capitalize
-          )
+          get_default_displayname(userdata)
         end
 
       userdata[:description] =
@@ -187,14 +140,8 @@ module LdapAccountManage
       userdata[:mail] =
         if !options[:mail].nil?
           options[:mail]
-        elsif !config['common']['mailhost'].nil?
-          format(
-            '%<user>s@%<host>s',
-            user: username,
-            host: config['common']['mailhost']
-          )
         else
-          ''
+          get_default_mail(username, config)
         end
 
       userdata[:lang] =
@@ -208,7 +155,7 @@ module LdapAccountManage
         if !options[:phonenumber].nil?
           options[:phonenumber]
         else
-          '00000000000'
+          ''
         end
 
       userdata[:shell] =
@@ -282,11 +229,7 @@ module LdapAccountManage
         if !options[:displayname].nil?
           options[:displayname]
         else
-          format(
-            '%<given>s %<family>s',
-            given: userdata[:givenname].capitalize,
-            family: userdata[:familyname].capitalize
-          )
+          get_default_displayname(userdata)
         end
 
       userdata[:description] =
@@ -300,16 +243,7 @@ module LdapAccountManage
         if !options[:mail].nil?
           options[:mail]
         else
-          mail_default =
-            if !config['common']['mailhost'].nil?
-              format(
-                '%<user>s@%<host>s',
-                user: username,
-                host: config['common']['mailhost']
-              )
-            else
-              ''
-            end
+          mail_default = get_default_mail(username, config)
           mail = cli.ask(ask_message('mail address', default: mail_default)) do |q|
             q.validate = /(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i
           end
@@ -337,11 +271,12 @@ module LdapAccountManage
         if !options[:phonenumber].nil?
           options[:phonenumber]
         else
-          phone = cli.ask(ask_message('phone number', default: '')) do |q|
+          phone_default = ''
+          phone = cli.ask(ask_message('phone number', default: phone_default)) do |q|
             q.validate = /^(|\+?[0-9]{6}[0-9]*)$/
           end
           if phone == ''
-            '00000000000'
+            phone_default
           else
             phone
           end
@@ -383,7 +318,7 @@ module LdapAccountManage
   end
 
   class Command
-    desc 'useradd [options] USER', 'add an user to LDAP'
+    desc 'useradd USER [options]', 'add an user to LDAP'
     method_option :interactive, type: :boolean, default: true,
       desc: 'enable interactive mode'
     method_option :uidnumber, type: :numeric,
@@ -406,25 +341,25 @@ module LdapAccountManage
       desc: 'Description'
     method_option :password, type: :string,
       banner: 'PASSWORD',
-      desc: 'password (normally, you should input by tty)'
+      desc: 'Password (normally, you should input by tty)'
     method_option :mail, type: :string,
-      banner: 'EMAIL',
-      desc: 'email address'
+      banner: 'MAIL',
+      desc: 'E-mail address'
     method_option :lang, type: :string,
       banner: 'LANG',
-      desc: 'preferred language'
+      desc: 'Preferred language'
     method_option :phonenumber, type: :string,
       banner: 'PHONE',
-      desc: 'telephone number'
+      desc: 'Telephone number'
     method_option :shell, type: :string,
       banner: 'SHELL',
-      desc: 'login shell'
-    method_option :group, type: :string,
-      banner: 'GROUP,GROUP,...',
-      desc: 'extra groups'
+      desc: 'Login shell'
+    method_option :group, type: :array,
+      banner: 'GROUP ...',
+      desc: 'Extra groups'
     method_option :homedir, type: :string,
       banner: 'DIR',
-      desc: 'home directory'
+      desc: 'Home directory'
     def useradd(username)
       if options[:interactive]
         UserAdd.interactive_useradd(username, options, @injector, @config)

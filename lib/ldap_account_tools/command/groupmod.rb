@@ -61,10 +61,7 @@ module LdapAccountManage
   end
 
   class Command
-    desc(
-      'groupmod GROUP [options]',
-      'modify a group in LDAP'
-    )
+    desc 'groupmod GROUP [options]', 'modify a group in LDAP'
     method_option :gidnumber, type: :string,
       banner: 'NUM',
       desc: 'GID'
