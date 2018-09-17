@@ -15,7 +15,7 @@ module LdapAccountManage
       gecos = userdata[:displayname] + ',,,,' + userdata[:description]
 
       if userdata[:phonenumber] == ''
-        userdata[:phonenumber] = Util.DEFAULT_PHONENUMBER
+        userdata[:phonenumber] = Util::DEFAULT_PHONENUMBER
       end
 
       ldap.useradd(
@@ -30,7 +30,7 @@ module LdapAccountManage
         sn: userdata[:familyname],
         givenName: userdata[:givenname],
         displayName: userdata[:displayname],
-        description: userdata[:description],
+        description: userdata[:desc],
         mail: userdata[:mail],
         preferredLanguage: userdata[:lang],
         telephoneNumber: userdata[:phonenumber],
@@ -105,7 +105,7 @@ module LdapAccountManage
 
       userdata = {}
 
-      unless options[:uidnumber]
+      unless options[:uidnumber].nil?
         userdata[:uidnumber] = options[:uidnumber]
       end
 
@@ -130,7 +130,7 @@ module LdapAccountManage
           get_default_displayname(userdata)
         end
 
-      userdata[:description] =
+      userdata[:desc] =
         if !options[:desc].nil?
           options[:desc]
         else
@@ -232,7 +232,7 @@ module LdapAccountManage
           get_default_displayname(userdata)
         end
 
-      userdata[:description] =
+      userdata[:desc] =
         if !options[:desc].nil?
           options[:desc]
         else
@@ -245,7 +245,7 @@ module LdapAccountManage
         else
           mail_default = get_default_mail(username, config)
           mail = cli.ask(ask_message('mail address', default: mail_default)) do |q|
-            q.validate = /(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)/i
+            q.validate = Util::VALIDATE_REGEX_MAIL
           end
           if mail == ''
             mail_default
@@ -273,7 +273,7 @@ module LdapAccountManage
         else
           phone_default = ''
           phone = cli.ask(ask_message('phone number', default: phone_default)) do |q|
-            q.validate = /^(|\+?[0-9]{6}[0-9]*)$/
+            q.validate = Util::VALIDATE_REGEX_PHONENUMBER
           end
           if phone == ''
             phone_default

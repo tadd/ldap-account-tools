@@ -17,38 +17,48 @@ module LdapAccountManage
 
       userdata = {}
 
-      unless options[:gidnumber].nil?
-        groupdata[:gidNumber] = options[:gidnumber]
+      unless options[:uidnumber].nil?
+        userdata[:uidnumber] = options[:uidnumber]
       end
 
-      unless options[:desc].nil?
-        groupdata[:description] = options[:desc]
+      unless options[:familyname].nil?
+        userdata[:familyname] = options[:familyname]
       end
 
-      unless options[:member].nil? && options[:append_member].nil? && options[:delete_member].nil?
-        groupdata[:memberUid] = ldap.member_in_group(groupname)
+      unless userdata[:givenname].nil?
+        userdata[:givenname] = options[:givenname]
+      end
 
-        unless options[:member].nil?
-          options[:member].each do |username|
-            unless ldap.user_exists_by_name?(username)
-              raise Util::ToolOperationError, "No such a user exists: #{username}"
-            end
-          end
-          groupdata[:memberUid] = options[:member]
-        end
+      unless userdata[:displayname].nil?
+        userdata[:displayname] = options[:displayname]
+      end
 
-        unless options[:append_member].nil?
-          options[:append_member].each do |username|
-            unless ldap.user_exists_by_name?(username)
-              raise Util::ToolOperationError, "No such a user exists: #{username}"
-            end
-          end
-          groupdata[:memberUid] += options[:append_member]
-        end
+      unless userdata[:desc].nil?
+        userdata[:desc] = options[:desc]
+      end
 
-        unless options[:delete_member].nil?
-          groupdata[:memberUid] -= options[:delete_member]
-        end
+      unless userdata[:mail].nil?
+        userdata[:mail] = options[:mail]
+      end
+
+      unless userdata[:lang].nil?
+        userdata[:lang] = options[:lang]
+      end
+
+      unless userdata[:phonenumber].nil?
+        userdata[:phonenumber] = options[:phonenumber]
+      end
+
+      unless userdata[:shell].nil?
+        userdata[:shell] = options[:shell]
+      end
+
+      unless userdata[:homedir].nil?
+        userdata[:homedir] = options[:homedir]
+      end
+
+      unless userdata[:password].nil?
+        userdata[:password] = options[:password]
       end
 
       injector.lock.account_modify_lock do

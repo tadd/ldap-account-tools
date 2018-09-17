@@ -4,12 +4,12 @@ require_relative '../util/error'
 
 module LdapAccountManage
   module Util
-    module_function
-
     VALIDATE_REGEX_MAIL = /^(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)$/i
     VALIDATE_REGEX_PHONENUMBER = /^(|\+?[0-9]{6}[0-9]*)$/
 
     DEFAULT_PHONENUMBER = '00000000000'
+
+    module_function
 
     def validate_userdata(userdata, ldap:, injector:)
       unless userdata[:uidnumber].nil?
@@ -45,8 +45,14 @@ module LdapAccountManage
       end
 
       unless userdata[:mail].nil?
-        unless userdata[:mail] =~ MAIL_VALIDATE_REGEX
+        unless userdata[:mail] =~ VALIDATE_REGEX_MAIL
           raise Util::ToolOperationError, 'Mail format is illegal.'
+        end
+      end
+
+      unless userdata[:phonenumber].nil?
+        unless userdata[:phonenumber] =~ VALIDATE_REGEX_PHONENUMBER
+          raise Util::ToolOperationError, 'Phone number format is illegal.'
         end
       end
 
