@@ -30,7 +30,7 @@ module LdapAccountManage
       def default_paths
         [
           '/etc/ldap-account-tools/config.yaml',
-          'config.yaml'
+          'config.yaml',
         ].select { |path| File.exist?(path) }
       end
 
@@ -45,7 +45,7 @@ module LdapAccountManage
             'password_retry' => 3,
             'data_dir' => '/var/lib/ldap-account-tools/data',
             'cache_dir' => '/var/lib/ldap-account-tools/cache',
-            'lock_dir' => '/var/lock/ldap-account-tools'
+            'lock_dir' => '/var/lock/ldap-account-tools',
           },
           'common' => {
           },
@@ -60,12 +60,12 @@ module LdapAccountManage
               'superuser_is_readable_user' => false,
               'auth_method' => 'simple',
               'dn' => 'cn=Manager,' + basename,
-              'password_file' => '/etc/ldap-account-tools/private/ldap_password'
+              'password_file' => '/etc/ldap-account-tools/private/ldap_password',
             },
             'user_info' => {
-              'auth_method' => 'simple'
-            }
-          }
+              'auth_method' => 'simple',
+            },
+          },
         }
       end
     end

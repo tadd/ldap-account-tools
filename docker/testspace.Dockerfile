@@ -2,8 +2,6 @@ FROM debian:stable
 
 ENV DEBIAN_FRONTEND="noninteractive"
 
-ENV BUNDLE_CACHE_DIR /tmp/bundle-cache
-
 RUN apt-get update
 RUN apt-get install -y apt-utils
 
@@ -13,6 +11,8 @@ RUN apt-get install -y \
   ruby-dev libcrack2 libcrack2-dev libffi-dev gcc make
 
 RUN gem install bundler
+
+ENV BUNDLE_CACHE_DIR /tmp/bundle-cache
 
 RUN mkdir -p ${BUNDLE_CACHE_DIR}
 RUN mkdir -p ${BUNDLE_CACHE_DIR}/lib/ldap_account_tools/util
@@ -30,7 +30,7 @@ ADD docker/testspace-setup.bash /opt/setup.bash
 
 RUN bash /opt/setup.bash
 
-# RUN rm -rf /var/lib/apt/lists/*
+RUN rm -rf /var/lib/apt/lists/*
 
 ADD docker/testspace-run.bash /opt/run.bash
 

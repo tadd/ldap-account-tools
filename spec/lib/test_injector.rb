@@ -54,7 +54,7 @@ module LdapAccountManageSpec
 
       {
         status: true,
-        content: result
+        content: result,
       }
     end
 
@@ -63,7 +63,7 @@ module LdapAccountManageSpec
 
       {
         status: true,
-        content: result
+        content: result,
       }
     end
   end

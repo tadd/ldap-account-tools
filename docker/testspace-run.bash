@@ -69,6 +69,17 @@ ldap-account userdel testuser
 ldap-account groupdel testgroup
 
 
+# modify users
+ldap-account usermod testuser2 \
+  --desc 'Test user 2' \
+  --givenname 'user2' \
+  --append-group testgroup2
+
+ldap-account passwd --password 'Difficult-pass00' testuser2
+
+ldap-account chsh --shell '/bin/sh' testuser2
+
+
 # modify groups
 ldap-account groupmod --gidnumber 30100 testgroup2 \
   --member testuser2 testuser_has_info \

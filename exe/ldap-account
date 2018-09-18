@@ -2,9 +2,11 @@
 # frozen_string_literal: true
 
 require 'ldap_account_tools'
+require 'net-ldap'
 
 ILLEGAL_CONFIG_ERROR_CODE = 7
 TOOL_OPERATION_ERROR_CODE = 8
+CRITICAL_ERROR_CODE = 9
 SIGINT_ERROR_CODE = 130
 
 Signal.trap('INT') do |_|
@@ -21,4 +23,16 @@ rescue LdapAccountManage::IllegalConfigError => err
   STDERR.puts "Config error: #{err.message}"
 
   exit ILLEGAL_CONFIG_ERROR_CODE
+rescue Net::LDAP::Error => err
+  if err.message =~ /^Cannot assign requested address/
+    STDERR.puts "Failed to connect LDAP: #{err.message}"
+
+    exit CRITICAL_ERROR_CODE
+  else
+    pass err
+  end
+rescue Net::LDAP::ConnectionRefusedError => err
+  STDERR.puts "Failed to connect LDAP: #{err.message}"
+
+  exit CRITICAL_ERROR_CODE
 end

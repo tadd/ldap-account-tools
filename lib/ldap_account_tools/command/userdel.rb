@@ -28,8 +28,8 @@ module LdapAccountManage
           ldap.groupmod(
             groupname,
             replace: {
-              memberUid: member_uid
-            }
+              memberUid: member_uid,
+            },
           )
         end
       end

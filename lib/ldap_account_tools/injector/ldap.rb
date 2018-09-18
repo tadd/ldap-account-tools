@@ -4,16 +4,37 @@ require 'net-ldap'
 require_relative '../config'
 
 module LdapAccountManage
-  module SubInjector
-    class LdapError < StandardError; end
+  class LdapError < StandardError
+    def initialize(result)
+      type = result.message
+      detail = result.error_message
+      super("#{type}: #{detail}")
+      @type = type
+      @detail = detail
+    end
 
+    attr_reader :type
+    attr_reader :detail
+  end
+
+  module SubInjector
     class NetLdapWrapper
       def initialize(options)
         @ldap = Net::LDAP.new(options)
       end
 
-      def error_report_by_result(result)
-        "#{result.message}: #{result.error_message}"
+      def from_result(result)
+        if result
+          {
+            status: true,
+            content: result,
+          }
+        else
+          {
+            status: false,
+            error: LdapError.new(@ldap.get_operation_result),
+          }
+        end
       end
 
       def normalized_attributes(attrs)
@@ -29,38 +50,20 @@ module LdapAccountManage
       end
 
       def add(dn:, attributes:)
-        result = @ldap.add(
-          dn: dn,
-          attributes: normalized_attributes(attributes)
+        from_result(
+          @ldap.add(
+            dn: dn,
+            attributes: normalized_attributes(attributes),
+          ),
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
 
       def delete(dn:)
-        result = @ldap.delete(
-          dn: dn
+        from_result(
+          @ldap.delete(
+            dn: dn,
+          ),
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
 
       def normalized_operations(operations)
@@ -82,41 +85,23 @@ module LdapAccountManage
       end
 
       def modify(dn:, operations:)
-        result = @ldap.modify(
-          dn: dn,
-          operations: normalized_operations(operations)
+        from_result(
+          @ldap.modify(
+            dn: dn,
+            operations: normalized_operations(operations),
+          ),
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
 
       def search(base:, filter:, attributes:, &block)
-        result = @ldap.search(
-          base: base,
-          filter: filter,
-          attributes: attributes,
-          &block
+        from_result(
+          @ldap.search(
+            base: base,
+            filter: filter,
+            attributes: attributes,
+            &block
+          ),
         )
-        if result
-          {
-            status: true,
-            content: result
-          }
-        else
-          {
-            status: false,
-            message: error_report_by_result(@ldap.get_operation_result)
-          }
-        end
       end
     end
 
@@ -152,7 +137,7 @@ module LdapAccountManage
         if result[:status]
           result[:content]
         else
-          raise LdapError, result[:message]
+          raise result[:error]
         end
       end
 
@@ -183,7 +168,7 @@ module LdapAccountManage
           filter: filter,
           attributes: %w[
             cn
-          ]
+          ],
         )
         result.size.positive?
       end
@@ -201,7 +186,7 @@ module LdapAccountManage
           filter: filter,
           attributes: %w[
             cn
-          ]
+          ],
         )
         result.size.positive?
       end
@@ -220,7 +205,7 @@ module LdapAccountManage
           filter: Net::LDAP::Filter.ge('uidNumber', 0),
           attributes: %w[
             uidNumber
-          ]
+          ],
         ) do |entry|
           entry.uidnumber.each do |num|
             uid_numbers[num] = true
@@ -242,7 +227,7 @@ module LdapAccountManage
           filter: Net::LDAP::Filter.ge('gidNumber', 0),
           attributes: %w[
             gidNumber
-          ]
+          ],
         ) do |entry|
           entry.gidnumber.each do |num|
             gid_numbers[num] = true
@@ -262,7 +247,7 @@ module LdapAccountManage
         from_result do
           @ldap.add(
             dn: "cn=#{attrs[:cn]},#{userbase}",
-            attributes: attrs
+            attributes: attrs,
           )
         end
       end
@@ -271,7 +256,7 @@ module LdapAccountManage
         from_result do
           @ldap.add(
             dn: "cn=#{attrs[:cn]},#{groupbase}",
-            attributes: attrs
+            attributes: attrs,
           )
         end
       end
@@ -279,7 +264,7 @@ module LdapAccountManage
       def userdel(name)
         from_result do
           @ldap.delete(
-            dn: "cn=#{name},#{userbase}"
+            dn: "cn=#{name},#{userbase}",
           )
         end
       end
@@ -287,7 +272,7 @@ module LdapAccountManage
       def groupdel(name)
         from_result do
           @ldap.delete(
-            dn: "cn=#{name},#{groupbase}"
+            dn: "cn=#{name},#{groupbase}",
           )
         end
       end
@@ -304,22 +289,13 @@ module LdapAccountManage
         )
       end
 
-      def groupmod(name, operations)
-        from_result do
-          @ldap.modify(
-            dn: "cn=#{name},#{groupbase}",
-            operations: operations
-          )
-        end
-      end
-
       def member_in_group(groupname)
         entries = group_search(
           filter: Net::LDAP::Filter.eq('cn', groupname),
           attributes: %w[
             cn
             memberUid
-          ]
+          ],
         )
 
         if entries.empty?
@@ -328,6 +304,24 @@ module LdapAccountManage
           entries[0].memberuid
         else
           []
+        end
+      end
+
+      def usermod(name, operations)
+        from_result do
+          @ldap.modify(
+            dn: "cn=#{name},#{userbase}",
+            operations: operations,
+          )
+        end
+      end
+
+      def groupmod(name, operations)
+        from_result do
+          @ldap.modify(
+            dn: "cn=#{name},#{groupbase}",
+            operations: operations,
+          )
         end
       end
     end
@@ -370,12 +364,12 @@ module LdapAccountManage
           when 'on' then
             {
               method: :simple_tls,
-              tls_options: tls_options
+              tls_options: tls_options,
             }
           when 'start_tls' then
             {
               method: :start_tls,
-              tls_options: tls_options
+              tls_options: tls_options,
             }
           end
 
@@ -392,13 +386,13 @@ module LdapAccountManage
         auth_info =
           if auth_method == 'anonymous'
             {
-              method: :anonymous
+              method: :anonymous,
             }
           elsif auth_method == 'simple'
             {
               method: :simple,
               username: @superuser_auth_info['dn'],
-              password: runenv_injector.ldap_password
+              password: runenv_injector.ldap_password,
             }
           else
             raise LdapError, "Unsupported auth method: #{auth_method}"
@@ -408,7 +402,7 @@ module LdapAccountManage
           host: ldap_host,
           port: ldap_port,
           auth: auth_info,
-          encryption: ldap_encryption
+          encryption: ldap_encryption,
         )
 
         LdapInstanceWrapper.new(
@@ -423,13 +417,13 @@ module LdapAccountManage
         auth_info =
           if auth_method == 'anonymous'
             {
-              method: :anonymous
+              method: :anonymous,
             }
           elsif auth_method == 'simple'
             {
               method: :simple,
               username: "cn=#{username},#{@userbase}",
-              password: password
+              password: password,
             }
           else
             raise LdapError, "Unsupported auth method: #{auth_method}"
@@ -438,13 +432,15 @@ module LdapAccountManage
         ldap = @ldap.new(
           host: ldap_host,
           port: ldap_port,
-          auth: auth_info
+          auth: auth_info,
         )
 
         LdapInstanceWrapper.new(
           ldap,
-          uid_start: @uid_start, gid_start: @gid_start,
-          userbase: @userbase, groupbase: @groupbase
+          uid_start: @uid_start,
+          gid_start: @gid_start,
+          userbase: @userbase,
+          groupbase: @groupbase,
         )
       end
     end
