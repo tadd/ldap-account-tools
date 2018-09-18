@@ -16,7 +16,7 @@ module LdapAccountManage
         cn: groupname,
         gidNumber: groupdata[:gidnumber],
         description: groupdata[:description],
-        memberUid: groupdata[:memberUid]
+        memberUid: groupdata[:memberUid],
       )
     end
 

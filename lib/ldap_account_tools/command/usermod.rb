@@ -6,6 +6,20 @@ require_relative '../util/error'
 
 module LdapAccountManage
   module UserMod
+    USERDATA_ATTR_MAP = {
+      familyname: :sn,
+      givenname: :givenName,
+      displayname: :displayName,
+      desc: :description,
+      mail: :mail,
+      lang: :preferredLanguage,
+      phonenumber: :telephoneNumber,
+      shell: :loginShell,
+      uidnumber: :uidNumber,
+      gidnumber: :gidNumber,
+      homedir: :homeDirectory,
+    }.freeze
+
     module_function
 
     def usermod(username, options, injector, _config)
@@ -25,46 +39,51 @@ module LdapAccountManage
         userdata[:familyname] = options[:familyname]
       end
 
-      unless userdata[:givenname].nil?
+      unless options[:givenname].nil?
         userdata[:givenname] = options[:givenname]
       end
 
-      unless userdata[:displayname].nil?
+      unless options[:displayname].nil?
         userdata[:displayname] = options[:displayname]
       end
 
-      unless userdata[:desc].nil?
+      unless options[:desc].nil?
         userdata[:desc] = options[:desc]
       end
 
-      unless userdata[:mail].nil?
+      unless options[:mail].nil?
         userdata[:mail] = options[:mail]
       end
 
-      unless userdata[:lang].nil?
+      unless options[:lang].nil?
         userdata[:lang] = options[:lang]
       end
 
-      unless userdata[:phonenumber].nil?
+      unless options[:phonenumber].nil?
         userdata[:phonenumber] = options[:phonenumber]
       end
 
-      unless userdata[:shell].nil?
+      unless options[:shell].nil?
         userdata[:shell] = options[:shell]
       end
 
-      unless userdata[:homedir].nil?
+      unless options[:homedir].nil?
         userdata[:homedir] = options[:homedir]
       end
 
-      unless userdata[:password].nil?
-        userdata[:password] = options[:password]
+      unless options[:password].nil?
+        userdata[:password] = Util.ldap_password_hash(
+          options[:password],
+          injector: injector,
+        )
       end
 
       injector.lock.account_modify_lock do
-        ldap.groupmod(
-          groupname,
-          replace: groupdata
+        ldap.usermod(
+          username,
+          replace: Util.hash_collect(userdata) do |k, v|
+            [USERDATA_ATTR_MAP[k], v]
+          end,
         )
       end
     end

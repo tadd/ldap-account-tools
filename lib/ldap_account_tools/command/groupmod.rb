@@ -54,7 +54,7 @@ module LdapAccountManage
       injector.lock.account_modify_lock do
         ldap.groupmod(
           groupname,
-          replace: groupdata
+          replace: groupdata,
         )
       end
     end

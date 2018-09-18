@@ -38,5 +38,15 @@ module LdapAccountManage
 
       result
     end
+
+    def hash_collect(h)
+      result = {}
+      h.each do |k1, v1|
+        k2, v2 = yield k1, v1
+        result[k2] = v2
+      end
+
+      result
+    end
   end
 end

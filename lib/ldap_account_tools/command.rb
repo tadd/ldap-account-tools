@@ -29,7 +29,7 @@ module LdapAccountManage
 end
 
 Dir.glob(
-  File.expand_path('command/*.rb', __dir__)
+  File.expand_path('command/*.rb', __dir__),
 ).each do |entry|
   require_relative entry
 end

@@ -11,8 +11,8 @@ module LdapAccountManage
     module_function
 
     def _useradd(username, userdata, ldap, injector)
-      password_hash = '{CRYPT}' + injector.cracklib.crypt_hash(userdata[:password])
-      gecos = userdata[:displayname] + ',,,,' + userdata[:description]
+      password_hash = Util.ldap_password_hash(userdata[:password], injector: injector)
+      gecos = "#{userdata[:displayname]},,,#{userdata[:phonenumber]},#{userdata[:desc]}"
 
       if userdata[:phonenumber] == ''
         userdata[:phonenumber] = Util::DEFAULT_PHONENUMBER
@@ -38,7 +38,7 @@ module LdapAccountManage
         uidNumber: userdata[:uidnumber],
         gidNumber: userdata[:gidnumber],
         homeDirectory: userdata[:homedir],
-        gecos: gecos
+        gecos: gecos,
       )
 
       ldap.groupadd(
@@ -48,18 +48,19 @@ module LdapAccountManage
         cn: username,
         gidNumber: userdata[:gidnumber],
         description: "The primary group of #{username}",
-        memberUid: username
+        memberUid: username,
       )
     end
 
     def before_useradd(username, userdata, ldap, injector)
       if ldap.user_exists_by_name?(username)
-        raise Util::ToolOperationError, "already user exists: #{username}"
+        raise Util::ToolOperationError, "Already user exists: #{username}"
       end
 
       Util.validate_userdata(
         userdata,
-        ldap: ldap, injector: injector
+        ldap: ldap,
+        injector: injector,
       )
     end
 
@@ -77,20 +78,12 @@ module LdapAccountManage
     end
 
     def get_default_displayname(userdata)
-      format(
-        '%<given>s %<family>s',
-        given: userdata[:givenname].capitalize,
-        family: userdata[:familyname].capitalize
-      )
+      "#{userdata[:givenname].capitalize} #{userdata[:familyname].capitalize}"
     end
 
     def get_default_mail(username, config)
       if !config['common']['mailhost'].nil?
-        format(
-          '%<user>s@%<host>s',
-          user: username,
-          host: config['common']['mailhost']
-        )
+        "#{username}@#{config['common']['mailhost']}"
       else
         ''
       end
@@ -169,14 +162,18 @@ module LdapAccountManage
         if !options[:homedir].nil?
           options[:homedir]
         else
-          "/home/#{username}"
+          File.join('/home', username)
         end
 
       userdata[:password] =
         if !options[:password].nil?
           options[:password]
         else
-          ask_password(cli, injector, max_count: config['general']['password_retry'])
+          Util.ask_password(
+            cli,
+            injector: injector,
+            max_count: config['general']['password_retry'],
+          )
         end
 
       after_useradd(username, userdata, ldap, injector)
@@ -306,7 +303,7 @@ module LdapAccountManage
         if !options[:password].nil?
           options[:password]
         else
-          ask_password(cli, injector, max_count: config['general']['password_retry'])
+          Util.ask_password(cli, injector, max_count: config['general']['password_retry'])
         end
 
       after_useradd(username, userdata, ldap, injector)

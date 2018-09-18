@@ -18,11 +18,11 @@ module LdapAccountManage
           check = Cracklib::Password.new(password)
           {
             is_strong: check.strong?,
-            message: check.message
+            message: check.message,
           }
         else
           {
-            is_strong: true
+            is_strong: true,
           }
         end
       end

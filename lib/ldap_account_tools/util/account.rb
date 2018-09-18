@@ -70,7 +70,7 @@ module LdapAccountManage
       end
     end
 
-    def ask_password(cli, injector, max_count: 3)
+    def ask_password(cli, injector:, max_count: 3)
       count = max_count
       password = nil
       loop do
@@ -105,6 +105,10 @@ module LdapAccountManage
       end
 
       password
+    end
+
+    def ldap_password_hash(password, injector:)
+      "{CRYPT}#{injector.cracklib.crypt_hash(password)}"
     end
   end
 end

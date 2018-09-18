@@ -13,12 +13,12 @@ module LdapAccountManage
 
         can_read_password = check_can_read_password(
           @password_file,
-          @superuser_is_readable_user
+          @superuser_is_readable_user,
         )
         @run_user = get_run_user(
           config['ldap']['root_info']['uid'],
           can_read_password,
-          @superuser_is_readable_user
+          @superuser_is_readable_user,
         )
       end
 
@@ -53,19 +53,19 @@ module LdapAccountManage
           rescue Errno::EACCES => err
             return {
               status: false,
-              error: err
+              error: err,
             }
           rescue Errno::ENOENT => err
             return {
               status: false,
-              error: err
+              error: err,
             }
           end
 
         unless password_stat.readable?
           return {
             status: false,
-            error: Errno::EACCES.new('Cannot read file')
+            error: Errno::EACCES.new('Cannot read file'),
           }
         end
 
@@ -74,7 +74,7 @@ module LdapAccountManage
         end
 
         {
-          status: true
+          status: true,
         }
       end
 
@@ -84,7 +84,7 @@ module LdapAccountManage
         if superuser_is_readable_user
           return {
             is_superuser: can_read_password[:status],
-            uid: uid
+            uid: uid,
           }
         end
 
@@ -95,19 +95,19 @@ module LdapAccountManage
           raise IllegalConfigError, format(
             '%<username>s is a super user, but cannot read password: %<error>s',
             username: userinfo[:name],
-            error: can_read_password[:error].message
+            error: can_read_password[:error].message,
           )
         elsif !is_superuser && can_read_password[:status]
           userinfo = userinfo_by_uid(uid)
           raise IllegalConfigError, format(
             '%<username>s is not a super user, but can read password!',
-            username: userinfo[:name]
+            username: userinfo[:name],
           )
         end
 
         {
           is_superuser: is_superuser,
-          uid: uid
+          uid: uid,
         }
       end
 

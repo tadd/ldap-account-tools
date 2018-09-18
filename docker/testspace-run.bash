@@ -69,6 +69,13 @@ ldap-account userdel testuser
 ldap-account groupdel testgroup
 
 
+# modify users
+ldap-account usermod testuser2 \
+  --desc 'Test user 2' \
+  --givenname 'user2' \
+  --append-group testgroup2
+
+
 # modify groups
 ldap-account groupmod --gidnumber 30100 testgroup2 \
   --member testuser2 testuser_has_info \
