@@ -9,25 +9,46 @@ module LdapAccountManage
   module Passwd
     module_function
 
-    def passwd(username, _options, injector, config)
-      ldap = injector.ldap.superuserbind_ldap(injector.runenv)
-
-      new_password = Util.ask_password(
-        cli,
-        injector: injector,
-        max_count: config['general']['password_retry'],
-      )
+    def _passwd(username, cli:, ldap:, injector:, config:, options:)
+      new_password =
+        if !options[:password].nil?
+          options[:password]
+        else
+          Util.ask_password(
+            cli,
+            injector: injector,
+            max_count: config['general']['password_retry'],
+          )
+        end
       injector.lock.account_modify_lock do
         ldap.usermod(
           username,
           replace: {
-            userPassword: Util.ldap_password_hash(new_password, injector: injector),
+            userPassword: Util.ldap_password_hash(
+              new_password,
+              injector: injector,
+            ),
           },
         )
       end
     end
 
-    def runuser_passwd(_options, injector, config)
+    def passwd(username, options, injector, config)
+      ldap = injector.ldap.superuserbind_ldap(injector.runenv)
+
+      cli = HighLine.new
+
+      _passwd(
+        username,
+        cli: cli,
+        ldap: ldap,
+        options: options,
+        injector: injector,
+        config: config,
+      )
+    end
+
+    def runuser_passwd(options, injector, config)
       cli = HighLine.new
 
       username = injector.runenv.run_user
@@ -37,24 +58,22 @@ module LdapAccountManage
 
       ldap = injector.ldap.userbind_ldap(username, password)
 
-      new_password = Util.ask_password(
-        cli,
+      _passwd(
+        username,
+        cli: cli,
+        ldap: ldap,
+        options: options,
         injector: injector,
-        max_count: config['general']['password_retry'],
+        config: config,
       )
-      injector.lock.account_modify_lock do
-        ldap.usermod(
-          username,
-          replace: {
-            userPassword: Util.ldap_password_hash(new_password, injector: injector),
-          },
-        )
-      end
     end
   end
 
   class Command
-    desc 'passwd [USER]', 'change password in LDAP'
+    desc 'passwd [options] [USER]', 'change password in LDAP'
+    method_option :password, type: :string,
+      banner: 'PASSWORD',
+      desc: 'New password (normally, you should input by tty)'
     def passwd(username = nil)
       if username.nil?
         Passwd.runuser_passwd(options, @injector, @config)

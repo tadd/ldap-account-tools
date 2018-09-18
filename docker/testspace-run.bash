@@ -75,6 +75,10 @@ ldap-account usermod testuser2 \
   --givenname 'user2' \
   --append-group testgroup2
 
+ldap-account passwd --password 'Difficult-pass00' testuser2
+
+ldap-account chsh --shell '/bin/sh' testuser2
+
 
 # modify groups
 ldap-account groupmod --gidnumber 30100 testgroup2 \

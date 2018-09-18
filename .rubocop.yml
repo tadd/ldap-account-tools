@@ -74,5 +74,8 @@ Metrics/CyclomaticComplexity:
 Metrics/ClassLength:
   Enabled: false
 
+Metrics/ParameterLists:
+  Enabled: false
+
 Naming/UncommunicativeMethodParamName:
   Enabled: false
