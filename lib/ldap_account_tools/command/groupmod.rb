@@ -31,7 +31,7 @@ module LdapAccountManage
         unless options[:member].nil?
           options[:member].each do |username|
             unless ldap.user_exists_by_name?(username)
-              raise Util::ToolOperationError, "No such a user exists: #{username}"
+              raise Util::ToolOperationError, "No such an user exists: #{username}"
             end
           end
           groupdata[:memberUid] = options[:member]
@@ -40,7 +40,7 @@ module LdapAccountManage
         unless options[:append_member].nil?
           options[:append_member].each do |username|
             unless ldap.user_exists_by_name?(username)
-              raise Util::ToolOperationError, "No such a user exists: #{username}"
+              raise Util::ToolOperationError, "No such an user exists: #{username}"
             end
           end
           groupdata[:memberUid] += options[:append_member]

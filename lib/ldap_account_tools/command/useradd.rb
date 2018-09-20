@@ -351,9 +351,6 @@ module LdapAccountManage
     method_option :shell, type: :string,
       banner: 'SHELL',
       desc: 'Login shell'
-    method_option :group, type: :array,
-      banner: 'GROUP ...',
-      desc: 'Extra groups'
     method_option :homedir, type: :string,
       banner: 'DIR',
       desc: 'Home directory'

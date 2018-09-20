@@ -12,7 +12,7 @@ module LdapAccountManage
       ldap = injector.ldap.superuserbind_ldap(injector.runenv)
 
       unless ldap.user_exists_by_name?(username)
-        raise Util::ToolOperationError, "No such a user exists: #{username}"
+        raise Util::ToolOperationError, "No such an user exists: #{username}"
       end
 
       injector.lock.account_modify_lock do
