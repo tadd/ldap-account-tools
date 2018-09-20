@@ -72,8 +72,7 @@ ldap-account groupdel testgroup
 # modify users
 ldap-account usermod testuser2 \
   --desc 'Test user 2' \
-  --givenname 'user2' \
-  --append-group testgroup2
+  --givenname 'user2'
 
 ldap-account passwd --password 'Difficult-pass00' testuser2
 
