@@ -124,12 +124,6 @@ module LdapAccountManage
     method_option :shell, type: :string,
       banner: 'SHELL',
       desc: 'Login shell'
-    method_option :group, type: :string,
-      banner: 'GROUP ...',
-      desc: 'Extra groups'
-    method_option :append_group, type: :array,
-      banner: 'GROUP ...',
-      desc: 'Additional extra groups'
     method_option :homedir, type: :string,
       banner: 'DIR',
       desc: 'Home directory'
