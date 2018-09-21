@@ -14,6 +14,7 @@ module LdapAccountManage
         can_read_password = check_can_read_password(
           @password_file,
           @superuser_is_readable_user,
+          config['general']['disable_check_password_file'],
         )
         @run_user = get_run_user(
           config['ldap']['root_info']['uid'],
@@ -46,7 +47,7 @@ module LdapAccountManage
 
       private
 
-      def check_can_read_password(password_file, superuser_is_readable_user)
+      def check_can_read_password(password_file, superuser_is_readable_user, disable_check_password_file)
         password_stat =
           begin
             File.lstat(password_file)
@@ -69,7 +70,7 @@ module LdapAccountManage
           }
         end
 
-        unless check_password_file_mode(password_stat, superuser_is_readable_user)
+        unless disable_check_password_file || check_password_file_mode(password_stat, superuser_is_readable_user)
           raise IllegalConfigError, 'password file should not be executable and read by other users'
         end
 

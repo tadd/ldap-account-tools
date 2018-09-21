@@ -1,4 +1,6 @@
 general:
+  disable_check_password_file: true
+
   uid_start: 2000
   gid_start: 30000
 

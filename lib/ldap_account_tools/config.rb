@@ -43,6 +43,7 @@ module LdapAccountManage
             'uid_start' => 2_000,
             'gid_start' => 30_000,
             'password_retry' => 3,
+            'disable_check_password_file' => false,
             'data_dir' => '/var/lib/ldap-account-tools/data',
             'cache_dir' => '/var/lib/ldap-account-tools/cache',
             'lock_dir' => '/var/lock/ldap-account-tools',
