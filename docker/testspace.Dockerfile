@@ -23,7 +23,7 @@ ADD ldap-account-tools.gemspec ${BUNDLE_CACHE_DIR}/
 ADD lib/ldap_account_tools/version.rb ${BUNDLE_CACHE_DIR}/lib/ldap_account_tools/version.rb
 ADD lib/ldap_account_tools/util ${BUNDLE_CACHE_DIR}/lib/ldap_account_tools/util
 RUN cd ${BUNDLE_CACHE_DIR} \
- && bundle install --deployment --without development test \
+ && bundle install --path vendor/bundle \
  && bundle package --all
 
 ADD docker/testspace-setup.bash /opt/setup.bash

@@ -15,8 +15,10 @@ cd $INSTALL_DIR
 
 cp -r ${BUNDLE_CACHE_DIR}/vendor vendor
 
-bundle install --local --deployment --without development test
+bundle install --local
 bundle binstub ldap-account-tools
+
+bundle exec rake
 
 /etc/init.d/slapd start
 

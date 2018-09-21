@@ -1,5 +1,7 @@
 # LDAP Account Tools
 
+[![CircleCI](https://circleci.com/gh/mizunashi-mana/ldap-account-tools.svg?style=svg)](https://circleci.com/gh/mizunashi-mana/ldap-account-tools)
+
 ## Installation
 
 See [Installation Document](doc/Installation.md).
