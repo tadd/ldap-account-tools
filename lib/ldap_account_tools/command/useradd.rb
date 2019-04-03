@@ -303,7 +303,11 @@ module LdapAccountManage
         if !options[:password].nil?
           options[:password]
         else
-          Util.ask_password(cli, injector, max_count: config['general']['password_retry'])
+          Util.ask_password(
+            cli,
+            injector: injector,
+            max_count: config['general']['password_retry'],
+          )
         end
 
       after_useradd(username, userdata, ldap, injector)
