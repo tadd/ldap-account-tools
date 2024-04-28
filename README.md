@@ -10,19 +10,19 @@ See [Installation Document](doc/Installation.md).
 
 Subcommands:
 
-* `chsh` Change login shell in LDAP
-* `config` Show config
-* `groupadd` Add a group to LDAP
-* `groupdel` Delete a group from LDAP
-* `groupmod` Modify a group in LDAP
-* `help` Describe available commands or one specific command
-* `passwd` Change password in LDAP
-* `useradd` Add an user to LDAP
-* `userdel` Delete an user from LDAP
-* `userlock` Lock/unlock an user from LDAP
-* `usermod` Modify an user in LDAP
+* `chsh [options] [USER]`
+* `config [option]`
+* `groupadd GROUP [options]`
+* `groupdel [options] GROUP`
+* `groupmod GROUP [options]`
+* `help [COMMAND]`
+* `passwd [options] [USER]`
+* `useradd USER [options]`
+* `userdel [options] USER`
+* `userlock [options] USER`
+* `usermod USER [options]`
 
-See `ldap-account help` for their option and more info.
+See `ldap-account help` for their option and more information.
 
 ## Test
 
