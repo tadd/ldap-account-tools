@@ -15,24 +15,24 @@ end
 
 begin
   LdapAccountManage.application.run
-rescue LdapAccountManage::Util::ToolOperationError => err
-  STDERR.puts "Error: #{err.message}"
+rescue LdapAccountManage::Util::ToolOperationError => e
+  warn "Error: #{e.message}"
 
   exit TOOL_OPERATION_ERROR_CODE
-rescue LdapAccountManage::IllegalConfigError => err
-  STDERR.puts "Config error: #{err.message}"
+rescue LdapAccountManage::IllegalConfigError => e
+  warn "Config error: #{e.message}"
 
   exit ILLEGAL_CONFIG_ERROR_CODE
-rescue Net::LDAP::Error => err
-  if err.message =~ /^Cannot assign requested address/
-    STDERR.puts "Failed to connect LDAP: #{err.message}"
+rescue Net::LDAP::Error => e
+  if e.message =~ /^Cannot assign requested address/
+    warn "Failed to connect LDAP: #{e.message}"
 
     exit CRITICAL_ERROR_CODE
   else
-    pass err
+    pass e
   end
-rescue Net::LDAP::ConnectionRefusedError => err
-  STDERR.puts "Failed to connect LDAP: #{err.message}"
+rescue Net::LDAP::ConnectionRefusedError => e
+  warn "Failed to connect LDAP: #{e.message}"
 
   exit CRITICAL_ERROR_CODE
 end

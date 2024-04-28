@@ -51,15 +51,15 @@ module LdapAccountManage
         password_stat =
           begin
             File.lstat(password_file)
-          rescue Errno::EACCES => err
+          rescue Errno::EACCES => e
             return {
               status: false,
-              error: err,
+              error: e,
             }
-          rescue Errno::ENOENT => err
+          rescue Errno::ENOENT => e
             return {
               status: false,
-              error: err,
+              error: e,
             }
           end
 

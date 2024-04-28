@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
   spec.homepage = 'https://github.com/mizunashi-mana/ldap-account-tools'
 
   spec.platform = Gem::Platform::RUBY
+  spec.required_ruby_version = '>= 2.4'
 
   spec.add_dependency('highline', '~> 2.0')
   spec.add_dependency('lockfile', '~> 2.1')
@@ -41,9 +42,10 @@ Gem::Specification.new do |spec|
       unless system('git status', out: '/dev/null', err: '/dev/null')
         raise Errno::ENOENT, 'Not a git repository'
       end
+
       `git ls-files -z`.split("\x0")
     rescue Errno::ENOENT
-      STDERR.puts 'Use fallback find files, since not found a git repository'
+      warn 'Use fallback find files, since not found a git repository'
       LdapAccountManage::Util.filelist('.')
         .reject { |f| f =~ /^(\.bundle|vendor|coverage|bin)/ }
     end

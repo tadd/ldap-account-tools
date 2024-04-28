@@ -215,6 +215,7 @@ module LdapAccountManage
         uid = @uid_start
         loop do
           break unless uid_numbers[uid.to_s]
+
           uid += 1
         end
 
@@ -237,6 +238,7 @@ module LdapAccountManage
         gid = @gid_start
         loop do
           break unless gid_numbers[gid.to_s]
+
           gid += 1
         end
 

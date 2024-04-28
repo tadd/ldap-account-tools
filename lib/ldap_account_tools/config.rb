@@ -15,8 +15,8 @@ module LdapAccountManage
           if !path.nil?
             begin
               YAML.load_file(path)
-            rescue Errno::ENOENT => err
-              raise IllegalConfigError, "Cannot load config: #{err.message}"
+            rescue Errno::ENOENT => e
+              raise IllegalConfigError, "Cannot load config: #{e.message}"
             end
           elsif paths.size.positive?
             YAML.load_file(paths[0])

@@ -1,5 +1,5 @@
 AllCops:
-  TargetRubyVersion: 2.3
+  TargetRubyVersion: 2.4
   DisplayCopNames: true
   DisplayStyleGuide: true
   Exclude:
@@ -11,7 +11,7 @@ AllCops:
 Bundler/OrderedGems:
   Enabled: false
 
-Layout/AlignHash:
+Layout/HashAlignment:
   Enabled: false
 
 Layout/EmptyLinesAroundModuleBody:
@@ -26,7 +26,7 @@ Style/Documentation:
 Style/NumericPredicate:
   Enabled: false
 
-Style/UnneededCondition:
+Style/RedundantCondition:
   Enabled: false
 
 Layout/MultilineMethodCallIndentation:
@@ -77,5 +77,5 @@ Metrics/ClassLength:
 Metrics/ParameterLists:
   Enabled: false
 
-Naming/UncommunicativeMethodParamName:
+Naming/MethodParameterName:
   Enabled: false

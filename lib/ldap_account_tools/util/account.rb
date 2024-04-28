@@ -4,8 +4,8 @@ require_relative '../util/error'
 
 module LdapAccountManage
   module Util
-    VALIDATE_REGEX_MAIL = /^(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)$/i
-    VALIDATE_REGEX_PHONENUMBER = /^(|\+?[0-9]{6}[0-9]*)$/
+    VALIDATE_REGEX_MAIL = /^(|\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z)$/i.freeze
+    VALIDATE_REGEX_PHONENUMBER = /^(|\+?[0-9]{6}[0-9]*)$/.freeze
 
     DEFAULT_PHONENUMBER = '00000000000'
 
